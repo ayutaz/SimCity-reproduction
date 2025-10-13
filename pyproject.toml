@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "LLM-driven multi-agent macroeconomic simulation framework"
 readme = "README.md"
 requires-python = ">=3.12"
-license = { text = "MIT" }
+license = { text = "Apache-2.0" }
 authors = [
     { name = "SimCity Development Team" }
 ]
