@@ -1,0 +1,35 @@
+# SimCity Economic Simulation - Dependencies
+# Python version: 3.12
+
+# Core dependencies
+openai>=1.12.0
+python-dotenv>=1.0.0
+pydantic>=2.5.0
+
+# Data processing
+numpy>=1.26.0
+pandas>=2.1.0
+scipy>=1.11.0
+
+# Visualization
+streamlit>=1.31.0
+plotly>=5.18.0
+matplotlib>=3.8.0
+
+# Configuration
+pyyaml>=6.0.1
+jsonschema>=4.20.0
+
+# Utilities
+loguru>=0.7.2
+tqdm>=4.66.0
+
+# Development dependencies
+pytest>=7.4.0
+pytest-cov>=4.1.0
+ruff>=0.1.0
+mypy>=1.8.0
+
+# Optional: For enhanced features
+# pillow>=10.1.0  # If implementing city map image generation
+# networkx>=3.2  # If implementing agent relationship graphs

@@ -1,0 +1,263 @@
+"""
+LLM Interface for SimCity Economic Simulation
+
+OpenAI APIとの統合を提供し、Function Callingによるエージェント行動決定を実現
+"""
+
+import json
+import time
+from typing import Any, Dict, List, Optional
+from loguru import logger
+
+try:
+    from openai import OpenAI
+    from openai.types.chat import ChatCompletion
+except ImportError:
+    raise ImportError(
+        "OpenAI package not found. Install with: uv add openai"
+    )
+
+
+class LLMInterface:
+    """
+    OpenAI APIとのインターフェース
+
+    Function Callingを使用してエージェントの行動を決定し、
+    レスポンスの検証、リトライ、コスト追跡を提供
+    """
+
+    def __init__(
+        self,
+        api_key: str,
+        model: str = "gpt-4o-mini",
+        temperature: float = 0.7,
+        max_tokens: int = 2000,
+        max_retries: int = 3,
+        retry_delay: float = 1.0,
+        timeout: int = 30,
+    ):
+        """
+        Args:
+            api_key: OpenAI APIキー
+            model: 使用するモデル名
+            temperature: サンプリング温度 (0.0-2.0)
+            max_tokens: 最大トークン数
+            max_retries: 最大リトライ回数
+            retry_delay: リトライ間隔（秒）
+            timeout: APIタイムアウト（秒）
+        """
+        self.client = OpenAI(api_key=api_key, timeout=timeout)
+        self.model = model
+        self.temperature = temperature
+        self.max_tokens = max_tokens
+        self.max_retries = max_retries
+        self.retry_delay = retry_delay
+
+        # コスト追跡
+        self.total_input_tokens = 0
+        self.total_output_tokens = 0
+        self.call_count = 0
+
+        logger.info(
+            f"LLMInterface initialized with model={model}, "
+            f"temperature={temperature}"
+        )
+
+    def function_call(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        functions: List[Dict[str, Any]],
+        temperature: Optional[float] = None,
+    ) -> Dict[str, Any]:
+        """
+        Function Callingを使用してLLMを呼び出す
+
+        Args:
+            system_prompt: システムプロンプト（エージェントの役割・ゴール）
+            user_prompt: ユーザープロンプト（観察・状態）
+            functions: 利用可能な関数のリスト（OpenAI形式）
+            temperature: 温度（Noneの場合はデフォルト値を使用）
+
+        Returns:
+            Dict containing:
+                - function_name: 呼び出された関数名
+                - arguments: 関数の引数（dict）
+                - raw_response: 生のレスポンス
+
+        Raises:
+            Exception: API呼び出しに失敗した場合
+        """
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+
+        temp = temperature if temperature is not None else self.temperature
+
+        for attempt in range(self.max_retries):
+            try:
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                    functions=functions,
+                    function_call="auto",
+                    temperature=temp,
+                    max_tokens=self.max_tokens,
+                )
+
+                # コスト追跡
+                self.total_input_tokens += response.usage.prompt_tokens
+                self.total_output_tokens += response.usage.completion_tokens
+                self.call_count += 1
+
+                # Function Callの抽出
+                message = response.choices[0].message
+
+                if message.function_call:
+                    function_name = message.function_call.name
+                    arguments = json.loads(message.function_call.arguments)
+
+                    logger.debug(
+                        f"LLM function call: {function_name} with args: {arguments}"
+                    )
+
+                    return {
+                        "function_name": function_name,
+                        "arguments": arguments,
+                        "raw_response": response,
+                    }
+                else:
+                    # Function Callがない場合（エラー）
+                    logger.warning(
+                        f"No function call in response: {message.content}"
+                    )
+                    return {
+                        "function_name": None,
+                        "arguments": {},
+                        "raw_response": response,
+                        "error": "No function call returned",
+                    }
+
+            except Exception as e:
+                logger.warning(
+                    f"API call failed (attempt {attempt + 1}/{self.max_retries}): {e}"
+                )
+
+                if attempt < self.max_retries - 1:
+                    time.sleep(self.retry_delay)
+                else:
+                    logger.error(f"API call failed after {self.max_retries} attempts")
+                    raise
+
+    def validate_response(
+        self,
+        response: Dict[str, Any],
+        expected_functions: List[str],
+        validation_rules: Optional[Dict[str, Any]] = None,
+    ) -> tuple[bool, Optional[str]]:
+        """
+        LLMレスポンスの検証
+
+        Args:
+            response: function_call()の戻り値
+            expected_functions: 許可される関数名のリスト
+            validation_rules: 追加の検証ルール
+
+        Returns:
+            (is_valid, error_message) のタプル
+        """
+        function_name = response.get("function_name")
+        arguments = response.get("arguments", {})
+
+        # 関数名のチェック
+        if function_name is None:
+            return False, "No function name returned"
+
+        if function_name not in expected_functions:
+            return False, f"Unexpected function: {function_name}"
+
+        # カスタム検証ルール
+        if validation_rules:
+            for key, rule in validation_rules.items():
+                if key not in arguments:
+                    continue
+
+                value = arguments[key]
+
+                # 範囲チェック
+                if "min" in rule and value < rule["min"]:
+                    return False, f"{key}={value} is below minimum {rule['min']}"
+
+                if "max" in rule and value > rule["max"]:
+                    return False, f"{key}={value} exceeds maximum {rule['max']}"
+
+                # 型チェック
+                if "type" in rule and not isinstance(value, rule["type"]):
+                    return False, f"{key} has wrong type: {type(value)}"
+
+        return True, None
+
+    def get_cost_summary(self) -> Dict[str, float]:
+        """
+        コストサマリーを取得
+
+        Returns:
+            Dict containing:
+                - total_calls: 総呼び出し回数
+                - total_input_tokens: 総入力トークン数
+                - total_output_tokens: 総出力トークン数
+                - estimated_cost_usd: 推定コスト（USD）
+        """
+        # gpt-4o-miniの価格（2024年12月時点）
+        input_price_per_1m = 0.15  # ドル/100万トークン
+        output_price_per_1m = 0.60  # ドル/100万トークン
+
+        input_cost = (self.total_input_tokens / 1_000_000) * input_price_per_1m
+        output_cost = (self.total_output_tokens / 1_000_000) * output_price_per_1m
+        total_cost = input_cost + output_cost
+
+        return {
+            "total_calls": self.call_count,
+            "total_input_tokens": self.total_input_tokens,
+            "total_output_tokens": self.total_output_tokens,
+            "estimated_cost_usd": round(total_cost, 4),
+            "input_cost_usd": round(input_cost, 4),
+            "output_cost_usd": round(output_cost, 4),
+        }
+
+    def reset_cost_tracking(self):
+        """コスト追跡をリセット"""
+        self.total_input_tokens = 0
+        self.total_output_tokens = 0
+        self.call_count = 0
+        logger.info("Cost tracking reset")
+
+
+class LLMInterfaceFactory:
+    """LLMInterfaceのファクトリークラス"""
+
+    @staticmethod
+    def create_from_config(
+        api_key: str,
+        config: Dict[str, Any],
+    ) -> LLMInterface:
+        """
+        設定ファイルからLLMInterfaceを生成
+
+        Args:
+            api_key: OpenAI APIキー
+            config: LLM設定（llm_config.yamlのopenaiセクション）
+
+        Returns:
+            LLMInterface instance
+        """
+        return LLMInterface(
+            api_key=api_key,
+            model=config.get("model", "gpt-4o-mini"),
+            temperature=config.get("temperature", 0.7),
+            max_tokens=config.get("max_tokens", 2000),
+            max_retries=config.get("max_retries", 3),
+            retry_delay=config.get("retry_delay", 1.0),
+            timeout=config.get("timeout", 30),
+        )

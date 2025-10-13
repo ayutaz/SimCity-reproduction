@@ -1,0 +1,89 @@
+# LLM設定ファイル
+
+# OpenAI API設定
+openai:
+  model: "gpt-4o-mini"  # 使用モデル（最も安価）
+  api_key_env: "OPENAI_API_KEY"  # 環境変数名
+
+  # サンプリングパラメータ
+  temperature: 0.7  # 生成のランダム性（0.0-2.0）
+  max_tokens: 2000  # 最大トークン数
+  top_p: 1.0
+  frequency_penalty: 0.0
+  presence_penalty: 0.0
+
+  # リトライ設定
+  max_retries: 3
+  retry_delay: 1.0  # 秒
+  timeout: 30  # API呼び出しタイムアウト（秒）
+
+# VLM設定（都市地図生成用）
+vlm:
+  model: "gpt-4o-mini"  # VLMモデル（コスト削減のためgpt-4o-miniを使用）
+  temperature: 0.5
+  max_tokens: 1000
+
+# エージェント別LLM設定
+agents:
+  household:
+    model: "gpt-4o-mini"
+    temperature: 0.7
+    max_tokens: 1500
+    system_prompt_template: "prompts/household_system.txt"
+    user_prompt_template: "prompts/household_user.txt"
+
+  firm:
+    model: "gpt-4o-mini"
+    temperature: 0.7
+    max_tokens: 2000
+    system_prompt_template: "prompts/firm_system.txt"
+    user_prompt_template: "prompts/firm_user.txt"
+
+  government:
+    model: "gpt-4o-mini"
+    temperature: 0.5  # より保守的な意思決定
+    max_tokens: 2000
+    system_prompt_template: "prompts/government_system.txt"
+    user_prompt_template: "prompts/government_user.txt"
+
+  central_bank:
+    model: "gpt-4o-mini"
+    temperature: 0.3  # 最も保守的（金融政策）
+    max_tokens: 1500
+    system_prompt_template: "prompts/central_bank_system.txt"
+    user_prompt_template: "prompts/central_bank_user.txt"
+
+# Function Calling設定
+function_calling:
+  strict: false  # Strict mode（厳密な検証）
+  validate_responses: true  # レスポンス検証を有効化
+
+  # 異常行動チェック
+  validation:
+    max_consumption_ratio: 2.0  # 所得に対する最大消費比率
+    max_price_change_ratio: 0.3  # 最大価格変更率（±30%）
+    max_wage_change_ratio: 0.2  # 最大賃金変更率（±20%）
+    min_savings_ratio: -0.5  # 最小貯蓄率（-50%、借入可能）
+
+# コスト管理
+cost_tracking:
+  enable: true
+  log_file: "experiments/logs/llm_costs.json"
+  alert_threshold: 10.0  # 1実行あたりのコスト警告閾値（ドル）
+
+  # 価格設定（2024年12月時点、gpt-4o-mini）
+  pricing:
+    input_price_per_1m: 0.15  # ドル/100万トークン
+    output_price_per_1m: 0.60  # ドル/100万トークン
+
+# プロンプト最適化
+optimization:
+  cache_prompts: true  # プロンプトキャッシング（繰り返し部分を保存）
+  compress_history: true  # 履歴の圧縮
+  max_memory_steps: 5  # 各エージェントが保持する過去の行動数
+
+# デバッグ設定
+debug:
+  log_all_prompts: false  # 全プロンプトをログに記録
+  log_all_responses: false  # 全レスポンスをログに記録
+  save_failed_calls: true  # 失敗したAPI呼び出しを保存

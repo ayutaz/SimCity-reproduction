@@ -1,0 +1,95 @@
+# SimCity シミュレーション設定ファイル
+
+# シミュレーション基本設定
+simulation:
+  max_steps: 180  # 総ステップ数（15年 = 180ヶ月）
+  phase1_steps: 36  # Phase 1: 人口流入期（3年）
+  phase2_steps: 144  # Phase 2: 発展期（12年）
+  random_seed: 42  # 再現性のための乱数シード
+
+# エージェント数
+agents:
+  households:
+    initial: 10  # 初期世帯数
+    max: 200  # 最大世帯数
+    monthly_inflow: 5  # Phase 1での月間流入数
+  firms:
+    initial: 3  # 初期企業数
+    max: 50  # 最大企業数
+  government: 1
+  central_bank: 1
+
+# 経済パラメータ
+economy:
+  # 生産関数（Cobb-Douglas）
+  production:
+    alpha: 0.33  # 資本の生産弾力性
+    total_factor_productivity: 1.0  # 全要素生産性 A
+
+  # 金融システム
+  financial:
+    initial_interest_rate: 0.02  # 初期政策金利（2%）
+    interest_rate_smoothing: 0.8  # 金利平滑化係数 ρ
+    taylor_rule:
+      natural_rate: 0.02  # 自然利子率
+      inflation_target: 0.02  # インフレ目標（2%）
+      inflation_coefficient: 1.5  # α (インフレへの反応)
+      output_coefficient: 0.5  # β (GDPギャップへの反応)
+
+  # 税制
+  taxation:
+    income_tax_brackets:  # 累進課税の税率区分
+      - threshold: 0
+        rate: 0.0
+      - threshold: 20000
+        rate: 0.1
+      - threshold: 50000
+        rate: 0.2
+      - threshold: 100000
+        rate: 0.3
+    vat_rate: 0.1  # 付加価値税率（10%）
+
+  # 福祉政策
+  welfare:
+    ubi_enabled: true  # UBI（ユニバーサルベーシックインカム）有効化
+    ubi_amount: 500  # 月額UBI支給額
+    unemployment_benefit_rate: 0.5  # 失業給付率（前職給与の50%）
+
+# 市場設定
+markets:
+  labor:
+    matching_probability: 0.7  # マッチング確率
+    minimum_wage: 1000  # 最低賃金
+
+  goods:
+    num_categories: 10  # 商品カテゴリ数（論文では10+）
+    initial_price_range: [10, 1000]  # 初期価格帯
+
+  financial:
+    deposit_rate_spread: -0.01  # 預金金利 = 政策金利 + spread
+    loan_rate_spread: 0.02  # 貸出金利 = 政策金利 + spread
+
+# 地理・都市設定
+geography:
+  city_size: [100, 100]  # 都市グリッドサイズ（100x100）
+  initial_center: [50, 50]  # 都市中心座標
+  use_vlm_placement: true  # VLMによる企業配置を使用
+
+# データ設定
+data:
+  skills_file: "data/skills.json"  # スキルデータ（58種類）
+  goods_file: "data/goods.json"  # 商品データ（44種類）
+  household_profiles: "data/household_profiles.json"
+
+# ログ設定
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  save_interval: 12  # ログ保存間隔（ステップ）
+  output_dir: "experiments/logs"
+
+# 可視化設定
+visualization:
+  enable_streamlit: true
+  update_interval: 1  # Streamlit更新間隔（ステップ）
+  save_plots: true
+  plot_dir: "experiments/plots"
