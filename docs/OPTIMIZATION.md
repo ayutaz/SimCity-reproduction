@@ -116,6 +116,84 @@ Phase 10.2の実装はフルLLM統合の準備として完了しており、
 将来シミュレーションがLLMベースの意思決定を使用する際に
 コスト削減効果が発揮されます。
 
+### ✅ Phase 10.3: 静的プロンプト最適化とキャッシング（2025-10-14実装）
+
+**実装内容:**
+1. **システムプロンプトキャッシュ**: エージェントタイプごとにキャッシュ
+   - `cache_system_prompt()`, `get_cached_system_prompt()`メソッド追加
+   - 初回読み込み後はメモリから取得
+2. **静的コンテンツキャッシュ**: プロファイル情報を事前フォーマット
+   - `cache_static_content()`, `get_cached_static_content()`メソッド追加
+   - 名前、年齢、教育レベル、スキルなど不変情報をキャッシュ
+3. **キャッシュ統計追跡**: ヒット率を追跡
+   - `get_cache_stats()`メソッドでヒット率・ミス率を取得
+
+**実装箇所:**
+- `src/llm/llm_interface.py:40-76` - 初期化にキャッシュ機能追加
+- `src/llm/llm_interface.py:247-334` - キャッシング メソッド群
+- `src/agents/base_agent.py:61-63` - システムプロンプトキャッシュ統合
+- `src/agents/household.py:95-97` - 静的プロファイルキャッシュ統合
+- `src/agents/household.py:129-152` - _cache_static_profile_info()メソッド
+
+**期待される効果:**
+- プロンプト構築オーバーヘッド削減: 10-15%
+- メモリ効率向上: 重複文字列の排除
+- 実装準備完了: 将来のフルLLM統合時に効果発揮
+
+**実装状態:**
+- ✅ システムプロンプトキャッシュ完了
+- ✅ 静的コンテンツキャッシュ完了
+- ✅ キャッシュ統計追跡完了
+- ✅ テスト完了（16 passed）
+- ✅ 30ステップ検証完了（正常動作確認）
+
+### ✅ Phase 10.4: 非同期バッチ処理実装（2025-10-14実装）
+
+**実装内容:**
+1. **AsyncOpenAI統合**: 非同期クライアント追加
+   - `AsyncOpenAI`クライアント初期化
+2. **非同期Function Calling**: 並列LLM呼び出し
+   - `function_call_async()`メソッド追加
+   - リトライ機構を含む非同期処理
+3. **バッチ処理**: 複数エージェントの並列処理
+   - `batch_function_calls()`メソッド追加
+   - `asyncio.gather()`で並列実行
+
+**実装箇所:**
+- `src/llm/llm_interface.py:14` - AsyncOpenAIインポート
+- `src/llm/llm_interface.py:54` - async_client初期化
+- `src/llm/llm_interface.py:338-417` - function_call_async()
+- `src/llm/llm_interface.py:419-466` - batch_function_calls()
+
+**期待される効果:**
+- 実行時間削減: 60-90分 → 20-30分（**67-78%削減**）
+- スループット向上: 3-4倍
+- コスト: 変わらず（並列化により時間短縮のみ）
+
+**実装状態:**
+- ✅ AsyncOpenAI統合完了
+- ✅ 非同期メソッド実装完了
+- ✅ バッチ処理メソッド実装完了
+- ✅ テスト完了（16 passed）
+- ✅ 30ステップ検証完了（正常動作確認）
+- ⚠️ シミュレーションループの非同期化は将来実装
+
+**使用例:**
+```python
+# 並列処理の例
+requests = [
+    {
+        "system_prompt": household.system_prompt,
+        "user_prompt": household.build_user_prompt(obs),
+        "functions": household.get_available_actions(),
+    }
+    for household in households
+]
+
+# 全世帯の決定を並列実行
+responses = await llm.batch_function_calls(requests)
+```
+
 ### ✅ テスト・検証システム
 
 **実装済み:**

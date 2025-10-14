@@ -58,6 +58,10 @@ class BaseAgent(ABC):
         self.decision_frequencies = decision_frequencies or {}
         self.last_decision_steps: dict[str, int] = {}
 
+        # Phase 10.3: システムプロンプトをキャッシュ
+        if hasattr(llm_interface, "cache_system_prompt"):
+            llm_interface.cache_system_prompt(agent_type, system_prompt)
+
         logger.info(f"Agent {agent_id} ({agent_type}) initialized")
 
     @abstractmethod

@@ -92,6 +92,10 @@ class HouseholdAgent(BaseAgent):
         self.consumption = getattr(profile, "cash", 50000.0) * 0.1  # 10%を消費
         self.food_expenditure = self.consumption * 0.3  # 消費の30%を食料
 
+        # Phase 10.3: 静的プロファイル部分をキャッシュ
+        self._static_profile_cached = False
+        self._cache_static_profile_info()
+
         # 属性として保存（enum or string対応）
         education_value = (
             profile.education_level.value
@@ -121,6 +125,31 @@ class HouseholdAgent(BaseAgent):
         if isinstance(field, str):
             return field
         return field.value if hasattr(field, "value") else str(field)
+
+    def _cache_static_profile_info(self):
+        """
+        静的プロファイル情報をキャッシュ（Phase 10.3）
+
+        名前、年齢、教育レベル、スキルなど変わらない情報を事前にフォーマット
+        """
+        if not hasattr(self.llm, "cache_static_content"):
+            return
+
+        # スキル情報
+        skills_str = ", ".join(
+            [f"{skill}: {level:.2f}" for skill, level in self.profile.skills.items()]
+        )
+        if not skills_str:
+            skills_str = "None"
+
+        static_info = f"""Name: {self.profile.name}
+Age: {self.profile.age}
+Education: {self._get_enum_value(self.profile.education_level)}
+Skills: {skills_str}"""
+
+        cache_key = f"profile_household_{self.profile.id}"
+        self.llm.cache_static_content(cache_key, static_info)
+        self._static_profile_cached = True
 
     def get_profile_str(self) -> str:
         """

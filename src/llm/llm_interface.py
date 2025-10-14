@@ -11,7 +11,7 @@ from typing import Any
 from loguru import logger
 
 try:
-    from openai import OpenAI
+    from openai import AsyncOpenAI, OpenAI
 except ImportError as e:
     raise ImportError("OpenAI package not found. Install with: uv add openai") from e
 
@@ -22,6 +22,10 @@ class LLMInterface:
 
     Function Callingを使用してエージェントの行動を決定し、
     レスポンスの検証、リトライ、コスト追跡を提供
+
+    Phase 10.3: 静的プロンプト最適化
+    - システムプロンプトのキャッシュ
+    - 静的コンテンツの事前構築
     """
 
     def __init__(
@@ -33,6 +37,7 @@ class LLMInterface:
         max_retries: int = 3,
         retry_delay: float = 1.0,
         timeout: int = 30,
+        enable_prompt_caching: bool = True,
     ):
         """
         Args:
@@ -43,21 +48,31 @@ class LLMInterface:
             max_retries: 最大リトライ回数
             retry_delay: リトライ間隔（秒）
             timeout: APIタイムアウト（秒）
+            enable_prompt_caching: プロンプト最適化を有効化（Phase 10.3）
         """
         self.client = OpenAI(api_key=api_key, timeout=timeout)
+        self.async_client = AsyncOpenAI(api_key=api_key, timeout=timeout)  # Phase 10.4
         self.model = model
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.max_retries = max_retries
         self.retry_delay = retry_delay
+        self.enable_prompt_caching = enable_prompt_caching
 
         # コスト追跡
         self.total_input_tokens = 0
         self.total_output_tokens = 0
         self.call_count = 0
 
+        # Phase 10.3: 静的プロンプトキャッシュ
+        self._system_prompt_cache: dict[str, str] = {}
+        self._static_content_cache: dict[str, str] = {}
+        self._cache_hits = 0
+        self._cache_misses = 0
+
         logger.info(
-            f"LLMInterface initialized with model={model}, temperature={temperature}"
+            f"LLMInterface initialized with model={model}, temperature={temperature}, "
+            f"prompt_caching={enable_prompt_caching}, async=True"
         )
 
     def function_call(
@@ -227,6 +242,228 @@ class LLMInterface:
         self.total_output_tokens = 0
         self.call_count = 0
         logger.info("Cost tracking reset")
+
+    # Phase 10.3: プロンプト最適化メソッド
+
+    def cache_system_prompt(self, agent_type: str, prompt: str):
+        """
+        システムプロンプトをキャッシュ（Phase 10.3）
+
+        Args:
+            agent_type: エージェントタイプ（household, firm等）
+            prompt: システムプロンプト
+        """
+        if self.enable_prompt_caching:
+            self._system_prompt_cache[agent_type] = prompt
+            logger.debug(f"Cached system prompt for {agent_type}")
+
+    def get_cached_system_prompt(self, agent_type: str) -> str | None:
+        """
+        キャッシュされたシステムプロンプトを取得（Phase 10.3）
+
+        Args:
+            agent_type: エージェントタイプ
+
+        Returns:
+            キャッシュされたプロンプト（存在しない場合None）
+        """
+        if self.enable_prompt_caching:
+            prompt = self._system_prompt_cache.get(agent_type)
+            if prompt:
+                self._cache_hits += 1
+                return prompt
+            self._cache_misses += 1
+        return None
+
+    def cache_static_content(self, key: str, content: str):
+        """
+        静的コンテンツをキャッシュ（Phase 10.3）
+
+        Args:
+            key: キャッシュキー（例: "profile_household_1"）
+            content: 静的コンテンツ
+        """
+        if self.enable_prompt_caching:
+            self._static_content_cache[key] = content
+
+    def get_cached_static_content(self, key: str) -> str | None:
+        """
+        キャッシュされた静的コンテンツを取得（Phase 10.3）
+
+        Args:
+            key: キャッシュキー
+
+        Returns:
+            キャッシュされたコンテンツ（存在しない場合None）
+        """
+        if self.enable_prompt_caching:
+            content = self._static_content_cache.get(key)
+            if content:
+                self._cache_hits += 1
+                return content
+            self._cache_misses += 1
+        return None
+
+    def get_cache_stats(self) -> dict[str, int]:
+        """
+        キャッシュ統計を取得（Phase 10.3）
+
+        Returns:
+            キャッシュヒット・ミス統計
+        """
+        total_requests = self._cache_hits + self._cache_misses
+        hit_rate = (
+            self._cache_hits / total_requests if total_requests > 0 else 0.0
+        )
+
+        return {
+            "cache_hits": self._cache_hits,
+            "cache_misses": self._cache_misses,
+            "total_requests": total_requests,
+            "hit_rate": round(hit_rate, 3),
+            "system_prompts_cached": len(self._system_prompt_cache),
+            "static_content_cached": len(self._static_content_cache),
+        }
+
+    def clear_cache(self):
+        """キャッシュをクリア（Phase 10.3）"""
+        self._system_prompt_cache.clear()
+        self._static_content_cache.clear()
+        self._cache_hits = 0
+        self._cache_misses = 0
+        logger.info("Prompt cache cleared")
+
+    # Phase 10.4: 非同期バッチ処理メソッド
+
+    async def function_call_async(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        functions: list[dict[str, Any]],
+        temperature: float | None = None,
+    ) -> dict[str, Any]:
+        """
+        非同期Function Calling（Phase 10.4）
+
+        Args:
+            system_prompt: システムプロンプト
+            user_prompt: ユーザープロンプト
+            functions: 利用可能な関数のリスト
+            temperature: 温度
+
+        Returns:
+            LLMレスポンス
+        """
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+
+        temp = temperature if temperature is not None else self.temperature
+
+        for attempt in range(self.max_retries):
+            try:
+                response = await self.async_client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                    functions=functions,
+                    function_call="auto",
+                    temperature=temp,
+                    max_tokens=self.max_tokens,
+                )
+
+                # コスト追跡
+                self.total_input_tokens += response.usage.prompt_tokens
+                self.total_output_tokens += response.usage.completion_tokens
+                self.call_count += 1
+
+                # Function Callの抽出
+                message = response.choices[0].message
+
+                if message.function_call:
+                    function_name = message.function_call.name
+                    import json
+
+                    arguments = json.loads(message.function_call.arguments)
+
+                    logger.debug(
+                        f"Async LLM function call: {function_name}"
+                    )
+
+                    return {
+                        "function_name": function_name,
+                        "arguments": arguments,
+                        "raw_response": response,
+                    }
+                else:
+                    return {
+                        "function_name": None,
+                        "arguments": {},
+                        "raw_response": response,
+                        "error": "No function call returned",
+                    }
+
+            except Exception as e:
+                logger.warning(
+                    f"Async API call failed (attempt {attempt + 1}/{self.max_retries}): {e}"
+                )
+
+                if attempt < self.max_retries - 1:
+                    import asyncio
+
+                    await asyncio.sleep(self.retry_delay)
+                else:
+                    logger.error(f"Async API call failed after {self.max_retries} attempts")
+                    raise
+
+    async def batch_function_calls(
+        self,
+        requests: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """
+        複数のFunction Callingを並列実行（Phase 10.4）
+
+        Args:
+            requests: リクエストのリスト
+                各リクエストは以下を含む:
+                - system_prompt: システムプロンプト
+                - user_prompt: ユーザープロンプト
+                - functions: 利用可能な関数のリスト
+                - temperature: 温度（オプション）
+
+        Returns:
+            レスポンスのリスト
+        """
+        import asyncio
+
+        tasks = [
+            self.function_call_async(
+                system_prompt=req["system_prompt"],
+                user_prompt=req["user_prompt"],
+                functions=req["functions"],
+                temperature=req.get("temperature"),
+            )
+            for req in requests
+        ]
+
+        responses = await asyncio.gather(*tasks, return_exceptions=True)
+
+        # エラーハンドリング
+        valid_responses = []
+        for i, response in enumerate(responses):
+            if isinstance(response, Exception):
+                logger.error(f"Batch request {i} failed: {response}")
+                valid_responses.append({
+                    "function_name": None,
+                    "arguments": {},
+                    "error": str(response),
+                })
+            else:
+                valid_responses.append(response)
+
+        logger.info(f"Batch processing completed: {len(valid_responses)}/{len(requests)} successful")
+
+        return valid_responses
 
 
 class LLMInterfaceFactory:
