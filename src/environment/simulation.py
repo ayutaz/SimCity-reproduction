@@ -5,11 +5,13 @@ Simulation engine for SimCity
 """
 
 import json
+import random
 from pathlib import Path
 
 from loguru import logger
 
 from src.agents.central_bank import CentralBankAgent
+from src.agents.firm import FirmAgent, FirmTemplateLoader
 from src.agents.government import GovernmentAgent
 from src.agents.household import HouseholdAgent, HouseholdProfileGenerator
 from src.environment.markets.financial_market import FinancialMarket
@@ -134,9 +136,61 @@ class Simulation:
                 for profile in profiles
             ]
 
-        # 企業エージェントの初期化（簡略版）
-        self.firms = []
-        # TODO: 企業テンプレートから企業を生成
+        # 企業エージェントの初期化
+        logger.info("Initializing firms...")
+
+        # 企業テンプレートを読み込み
+        try:
+            templates = FirmTemplateLoader.load_templates()
+
+            # ランダムシードを設定
+            random.seed(self.config.simulation.random_seed)
+
+            # 初期企業数分をランダムに選択
+            num_initial_firms = self.config.agents.firms.initial
+            if num_initial_firms > len(templates):
+                logger.warning(
+                    f"Requested {num_initial_firms} firms, but only {len(templates)} "
+                    f"templates available. Using all templates."
+                )
+                num_initial_firms = len(templates)
+
+            selected_templates = random.sample(
+                list(templates.items()),
+                k=num_initial_firms
+            )
+
+            # 企業エージェントを生成
+            self.firms = []
+            city_center = (50, 50)  # デフォルト都市中心
+
+            for i, (firm_id, template) in enumerate(selected_templates):
+                # プロファイル生成
+                profile = FirmTemplateLoader.create_firm_profile(
+                    firm_id=str(i + 1),  # 連番ID
+                    template=template,
+                    location=city_center
+                )
+
+                # エージェント初期化
+                firm_agent = FirmAgent(
+                    profile=profile,
+                    llm_interface=self.llm_interface
+                )
+
+                self.firms.append(firm_agent)
+
+                logger.info(
+                    f"  Firm {i + 1}: {profile.name} ({profile.goods_type}), "
+                    f"Capital: ${profile.cash:.2f}, TFP: {profile.total_factor_productivity:.2f}"
+                )
+
+            logger.info(f"Initialized {len(self.firms)} firms")
+
+        except FileNotFoundError as e:
+            logger.error(f"Failed to load firm templates: {e}")
+            logger.warning("Simulation will continue without firms")
+            self.firms = []
 
         # 政府エージェントの初期化
         # 税率区分をdict形式からtuple形式に変換
@@ -172,7 +226,7 @@ class Simulation:
 
         # SimulationStateに設定
         self.state.households = [h.profile for h in self.households]
-        self.state.firms = []
+        self.state.firms = [f.profile for f in self.firms]
         self.state.government = gov_state
         self.state.central_bank = cb_state
 
