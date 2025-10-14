@@ -39,7 +39,7 @@ class FinancialTransaction:
 class FinancialMarket:
     """
     金融市場
-    
+
     預金・貸出を管理
     - 政策金利に基づく金利決定
     - 預金金利 = 政策金利 - deposit_spread
@@ -85,10 +85,10 @@ class FinancialMarket:
     ) -> list[FinancialTransaction]:
         """
         預金を処理
-        
+
         Args:
             requests: 預金申請リスト
-            
+
         Returns:
             取引結果リスト
         """
@@ -119,10 +119,10 @@ class FinancialMarket:
     ) -> list[FinancialTransaction]:
         """
         貸出を処理
-        
+
         Args:
             requests: 貸出申請リスト
-            
+
         Returns:
             取引結果リスト
         """
