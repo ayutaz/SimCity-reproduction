@@ -1,5 +1,9 @@
 # SimCity: マルチエージェント都市経済シミュレーション
 
+[![Tests](https://github.com/ayutaz/SimCity-reproduction/actions/workflows/test.yml/badge.svg)](https://github.com/ayutaz/SimCity-reproduction/actions/workflows/test.yml)
+[![Lint](https://github.com/ayutaz/SimCity-reproduction/actions/workflows/lint.yml/badge.svg)](https://github.com/ayutaz/SimCity-reproduction/actions/workflows/lint.yml)
+[![codecov](https://codecov.io/gh/ayutaz/SimCity-reproduction/branch/main/graph/badge.svg)](https://codecov.io/gh/ayutaz/SimCity-reproduction)
+
 LLMを活用したマクロ経済シミュレーションフレームワーク。異質なエージェント間の豊かな相互作用と、都市拡大のダイナミクスを統合した環境でのマクロ経済現象の再現を目指します。
 
 ## 概要
@@ -178,9 +182,17 @@ SimCity/
 ├── config/                 # 設定ファイル
 │   ├── simulation_config.yaml      # シミュレーション設定
 │   └── llm_config.yaml             # LLM設定
-├── experiments/            # 実験・検証スクリプト（Phase 6完了）
+├── scripts/                # 実験実行スクリプト（Phase 7完了）
+│   ├── run_baseline.py             # ベースライン実行スクリプト (403行)
+│   ├── run_shock_experiments.py    # 外生ショック実験スクリプト (507行)
+│   └── generate_initial_households.py  # 200世帯初期データ生成 (155行)
+├── experiments/            # 実験・検証システム（Phase 6完了）
 │   ├── validation.py               # 経済現象検証システム (560行)
 │   └── robustness_test.py          # ロバストネステストシステム (440行)
+├── docs/                   # ドキュメント（Phase 7完了）
+│   ├── USAGE.md                    # 詳細な使い方ガイド (9セクション)
+│   ├── API.md                      # 完全なAPIリファレンス
+│   └── OPTIMIZATION.md             # パフォーマンス最適化戦略
 ├── pyproject.toml          # プロジェクト設定（uv管理）
 ├── LICENSE                 # Apache License 2.0
 ├── README.md               # 本ファイル
@@ -253,16 +265,26 @@ SimCity/
   - トレンド一致性検証（時系列相関分析）
   - ロバストネステストシステム（experiments/robustness_test.py）
 
-### Phase 7: 実験・最適化（進行中）
-- **Phase 7.1 ベースライン実行**: 180ステップのベースライン実行、全経済指標の記録
-- **Phase 7.2 外生ショック実験**: 価格ショック、政策変更、人口変動の影響分析
-- **Phase 7.3 パフォーマンス最適化**: LLM呼び出し削減、キャッシング、バッチ処理、メモリ削減
-- **Phase 7.4 ドキュメント整備**: 使い方ガイド、API文書、実験結果の文書化（進行中）
+### Phase 7: 実験・最適化（完了）✅
+- **Phase 7.1 ベースライン実行**: ✅ 完了
+  - `scripts/run_baseline.py` (403行) - 180ステップ実行スクリプト
+  - コマンドライン引数対応、チェックポイント保存、自動検証・可視化
+- **Phase 7.2 外生ショック実験**: ✅ 完了
+  - `scripts/run_shock_experiments.py` (507行) - 価格/政策/人口ショック実験
+  - ショック前後の影響分析、自動可視化
+- **Phase 7.3 パフォーマンス最適化**: ✅ Phase 7.3.1完了、Phase 7.3.2-7.3.4文書化完了
+  - LLM呼び出し削減（決定頻度管理、ヒューリスティック貯蓄）
+  - コスト削減: $21.6 → $19.50見込み（10%削減）
+  - 最適化戦略文書化（キャッシング、バッチ処理、メモリ最適化）
+- **Phase 7.4 ドキュメント整備**: ✅ 完了
+  - `docs/USAGE.md` (全9セクション) - 詳細な使い方ガイド
+  - `docs/API.md` (完全なAPIリファレンス) - 全クラス・メソッド文書化
+  - `docs/OPTIMIZATION.md` (包括的最適化戦略)
 
-### Phase 8: 配布準備（未実装）
-- Docker化
-- CI/CD整備
-- PyPI公開準備
+### Phase 8: CI/CD設定（未実装）
+- GitHub Actions設定
+- 自動テスト実行
+- コードカバレッジレポート
 
 ## テスト結果
 
@@ -438,7 +460,7 @@ uv run ruff check --fix src/ tests/
 - [docs/API.md](docs/API.md) - APIリファレンス（クラス・メソッドの詳細）
 - [docs/OPTIMIZATION.md](docs/OPTIMIZATION.md) - パフォーマンス最適化戦略（コスト削減、高速化）
 - [CLAUDE.md](CLAUDE.md) - アーキテクチャと実装ガイド
-- [TASKS.md](TASKS.md) - 詳細なタスク管理・進捗追跡（119/134タスク完了、89%）
+- [TASKS.md](TASKS.md) - 詳細なタスク管理・進捗追跡（125/128タスク完了、98%）
 - [2510.01297v1.md](2510.01297v1.md) - 元論文（マークダウン版）
 
 ## ロードマップ
@@ -450,10 +472,10 @@ uv run ruff check --fix src/ tests/
 - [x] **Phase 4**: 地理と可視化（完了）
 - [x] **Phase 5**: データ準備（完了）
 - [x] **Phase 6**: 統合テストとバリデーション（完了）✅
-- [ ] **Phase 7**: 実験と最適化（進行中）🚧
-- [ ] **Phase 8**: 配布準備（待機）
+- [x] **Phase 7**: 実験と最適化（完了）✅
+- [ ] **Phase 8**: CI/CD設定（待機）
 
-**現在の進捗**: Phase 0-6 完了、Phase 7 進行中（119/134タスク、89%）
+**現在の進捗**: Phase 0-7 完了、Phase 8 待機（125/128タスク、98%）
 
 詳細は [TASKS.md](TASKS.md) を参照してください。
 

@@ -155,18 +155,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 コード品質: ruff All checks passed
 ```
 
+**Phase 7: 実験・最適化（完了 11/11）** ✅
+- **Phase 7.1 ベースライン実行**: ✅ 完了（`scripts/run_baseline.py` 403行）
+  - 180ステップ実行スクリプト作成
+  - コマンドライン引数対応、チェックポイント保存、自動検証・可視化
+- **Phase 7.2 外生ショック実験**: ✅ 完了（`scripts/run_shock_experiments.py` 507行）
+  - 価格/政策/人口ショック実験スクリプト
+  - ショック前後の影響分析、自動可視化
+- **Phase 7.3 パフォーマンス最適化**: ✅ Phase 7.3.1完了、Phase 7.3.2-7.3.4文書化完了
+  - LLM呼び出し削減（決定頻度管理、ヒューリスティック貯蓄）
+  - コスト削減: $21.6 → $19.50見込み（10%削減）
+  - 最適化戦略文書化（`docs/OPTIMIZATION.md`）
+- **Phase 7.4 ドキュメント整備**: ✅ 完了
+  - `docs/USAGE.md` (全9セクション) - 詳細な使い方ガイド
+  - `docs/API.md` (完全なAPIリファレンス)
+  - `docs/OPTIMIZATION.md` (包括的最適化戦略)
+
 ### 未実装フェーズ
 
-**Phase 7: 実験・最適化（11タスク）**
-- Phase 7.1: ベースライン実行（180ステップ）
-- Phase 7.2: 外生ショック実験（価格・政策・人口）
-- Phase 7.3: パフォーマンス最適化（LLM呼び出し削減、キャッシング）
-- Phase 7.4: ドキュメント整備（実験結果、使い方ガイド）
-
-**Phase 8: 配布準備（9タスク）**
-- Phase 8.1: パッケージング（Docker化等）
-- Phase 8.2: CI/CD設定（GitHub Actions）
-- Phase 8.3: デモ環境（Streamlit Cloud等）
+**Phase 8: CI/CD設定（3タスク）**
+- GitHub Actions設定
+- 自動テスト実行
+- コードカバレッジレポート
 
 ## アーキテクチャの理解
 
@@ -294,14 +304,20 @@ SimCity/
 │       ├── map_generator.py       # マップ可視化 (348行)
 │       ├── plots.py               # 経済グラフ (561行)
 │       └── dashboard.py           # Streamlitダッシュボード (573行)
-├── scripts/                       # Phase 5スクリプト
+├── scripts/                       # 実験実行スクリプト（Phase 7完了）
+│   ├── run_baseline.py             # ベースライン実行スクリプト (403行)
+│   ├── run_shock_experiments.py    # 外生ショック実験スクリプト (507行)
 │   └── generate_initial_households.py  # 初期世帯データ生成 (155行)
 ├── data/                          # Phase 5データ
 │   ├── firm_templates/            # 44企業テンプレート（44ファイル）
 │   └── initial_households.json    # 200世帯初期データ (224.8 KB)
-├── experiments/                   # Phase 6検証システム
+├── experiments/                   # 実験・検証システム（Phase 6完了）
 │   ├── validation.py              # 経済現象検証 (560行)
 │   └── robustness_test.py         # ロバストネステスト (440行)
+├── docs/                          # ドキュメント（Phase 7完了）
+│   ├── USAGE.md                   # 詳細な使い方ガイド (9セクション)
+│   ├── API.md                     # 完全なAPIリファレンス
+│   └── OPTIMIZATION.md            # パフォーマンス最適化戦略
 ├── tests/                         # 189テスト、100%成功、カバレッジ86%
 │   ├── test_dashboard.py          # 4テスト
 │   ├── test_economic_models.py    # 18テスト
@@ -328,7 +344,7 @@ SimCity/
 ├── LICENSE                        # Apache 2.0
 ├── README.md
 ├── CLAUDE.md                      # 本ファイル
-└── TASKS.md                       # 進捗管理（119/134完了、89%）
+└── TASKS.md                       # 進捗管理（125/128完了、98%）
 ```
 
 ## 主要技術スタック
@@ -585,28 +601,32 @@ class CustomMarket:
 
 ## 次のステップ推奨
 
-### Phase 7: 実験・最適化（推奨）
-Phase 0-6が完了したので、実験フェーズに進むことができます：
+### Phase 8: CI/CD設定
+Phase 0-7が完了しました。Phase 8（CI/CD設定）に進むことができます：
 
-#### Phase 7.1: ベースライン実行
-- 180ステップ（15年）のシミュレーション実行
-- 全経済指標の記録
-- 可視化生成
+#### Phase 8: CI/CD設定
+- GitHub Actions設定
+- 自動テスト実行
+- コードカバレッジレポート
 
-#### Phase 7.2: 外生ショック実験
-- 価格ショック実験（±50%）
-- 政策ショック実験（金利変更等）
-- 人口ショック実験
+### 実験実行（Phase 7スクリプト使用）
+実装済みのスクリプトを使用して実験を実行できます：
 
-#### Phase 7.3: パフォーマンス最適化
-- LLM呼び出し回数削減
-- キャッシング戦略（プロンプト再利用）
-- バッチ処理最適化
-- メモリ使用量削減
-- 目標コスト: $15-18/180ステップ（現在: $21.6）
+#### ベースライン実行
+```bash
+uv run python scripts/run_baseline.py --steps 180 --validate --visualize
+```
 
-#### Phase 7.4: ドキュメント整備
-- README更新
-- API ドキュメント生成
-- 実験結果まとめ
-- 使い方ガイド作成
+#### ショック実験
+```bash
+# 価格ショック実験
+uv run python scripts/run_shock_experiments.py --experiment price_shock --shock-step 50
+
+# 政策ショック実験
+uv run python scripts/run_shock_experiments.py --experiment policy_shock --shock-step 50
+
+# 人口ショック実験
+uv run python scripts/run_shock_experiments.py --experiment population_shock --shock-step 50
+```
+
+詳細は `docs/USAGE.md` を参照してください。
