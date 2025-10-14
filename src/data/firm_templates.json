@@ -1,0 +1,598 @@
+{
+  "firms": [
+    {
+      "firm_id": "firm_food_basic",
+      "name": "Basic Food Producer",
+      "goods_type": "food_basic",
+      "goods_category": "food",
+      "initial_capital": 50000.0,
+      "tfp": 1.0,
+      "initial_wage": 1800.0,
+      "skill_requirements": {
+        "mfg_assembly": 0.3,
+        "mfg_quality_control": 0.4
+      }
+    },
+    {
+      "firm_id": "firm_food_fresh",
+      "name": "Fresh Produce Supplier",
+      "goods_type": "food_fresh",
+      "goods_category": "food",
+      "initial_capital": 40000.0,
+      "tfp": 0.9,
+      "initial_wage": 1600.0,
+      "skill_requirements": {
+        "agri_farming": 0.5,
+        "trans_logistics": 0.3
+      }
+    },
+    {
+      "firm_id": "firm_food_meat",
+      "name": "Meat & Fish Market",
+      "goods_type": "food_meat",
+      "goods_category": "food",
+      "initial_capital": 60000.0,
+      "tfp": 1.0,
+      "initial_wage": 1900.0,
+      "skill_requirements": {
+        "mfg_quality_control": 0.5,
+        "svc_food_service": 0.3
+      }
+    },
+    {
+      "firm_id": "firm_food_prepared",
+      "name": "Prepared Meals Co.",
+      "goods_type": "food_prepared",
+      "goods_category": "food",
+      "initial_capital": 70000.0,
+      "tfp": 1.1,
+      "initial_wage": 2000.0,
+      "skill_requirements": {
+        "svc_food_service": 0.6,
+        "mfg_assembly": 0.3
+      }
+    },
+    {
+      "firm_id": "firm_food_restaurant",
+      "name": "Restaurant Chain",
+      "goods_type": "food_restaurant",
+      "goods_category": "food",
+      "initial_capital": 120000.0,
+      "tfp": 1.2,
+      "initial_wage": 2200.0,
+      "skill_requirements": {
+        "svc_food_service": 0.7,
+        "svc_hospitality": 0.5,
+        "biz_operations": 0.4
+      }
+    },
+    {
+      "firm_id": "firm_food_gourmet",
+      "name": "Gourmet Food Store",
+      "goods_type": "food_gourmet",
+      "goods_category": "food",
+      "initial_capital": 150000.0,
+      "tfp": 1.3,
+      "initial_wage": 2800.0,
+      "skill_requirements": {
+        "svc_food_service": 0.8,
+        "biz_sales": 0.6
+      }
+    },
+    {
+      "firm_id": "firm_clothing_basic",
+      "name": "Basic Apparel Manufacturer",
+      "goods_type": "clothing_basic",
+      "goods_category": "clothing",
+      "initial_capital": 80000.0,
+      "tfp": 1.0,
+      "initial_wage": 1700.0,
+      "skill_requirements": {
+        "mfg_assembly": 0.5,
+        "mfg_quality_control": 0.3
+      }
+    },
+    {
+      "firm_id": "firm_clothing_casual",
+      "name": "Casual Wear Brand",
+      "goods_type": "clothing_casual",
+      "goods_category": "clothing",
+      "initial_capital": 100000.0,
+      "tfp": 1.1,
+      "initial_wage": 2100.0,
+      "skill_requirements": {
+        "mfg_assembly": 0.5,
+        "creative_graphic_design": 0.4,
+        "biz_marketing": 0.4
+      }
+    },
+    {
+      "firm_id": "firm_clothing_formal",
+      "name": "Formal Attire Company",
+      "goods_type": "clothing_formal",
+      "goods_category": "clothing",
+      "initial_capital": 150000.0,
+      "tfp": 1.2,
+      "initial_wage": 2500.0,
+      "skill_requirements": {
+        "mfg_assembly": 0.6,
+        "creative_graphic_design": 0.5
+      }
+    },
+    {
+      "firm_id": "firm_clothing_luxury",
+      "name": "Luxury Fashion House",
+      "goods_type": "clothing_luxury",
+      "goods_category": "clothing",
+      "initial_capital": 300000.0,
+      "tfp": 1.4,
+      "initial_wage": 3500.0,
+      "skill_requirements": {
+        "creative_graphic_design": 0.8,
+        "biz_marketing": 0.7,
+        "biz_sales": 0.6
+      }
+    },
+    {
+      "firm_id": "firm_clothing_footwear",
+      "name": "Footwear Manufacturer",
+      "goods_type": "clothing_footwear",
+      "goods_category": "clothing",
+      "initial_capital": 90000.0,
+      "tfp": 1.0,
+      "initial_wage": 1900.0,
+      "skill_requirements": {
+        "mfg_assembly": 0.6,
+        "mfg_quality_control": 0.4
+      }
+    },
+    {
+      "firm_id": "firm_housing_basic",
+      "name": "Basic Housing Developer",
+      "goods_type": "housing_basic",
+      "goods_category": "housing",
+      "initial_capital": 500000.0,
+      "tfp": 1.0,
+      "initial_wage": 2000.0,
+      "skill_requirements": {
+        "const_carpentry": 0.5,
+        "const_electrical": 0.4,
+        "const_plumbing": 0.4
+      }
+    },
+    {
+      "firm_id": "firm_housing_standard",
+      "name": "Standard Housing Corp.",
+      "goods_type": "housing_standard",
+      "goods_category": "housing",
+      "initial_capital": 800000.0,
+      "tfp": 1.1,
+      "initial_wage": 2400.0,
+      "skill_requirements": {
+        "const_carpentry": 0.6,
+        "const_electrical": 0.5,
+        "biz_project_mgmt": 0.5
+      }
+    },
+    {
+      "firm_id": "firm_housing_premium",
+      "name": "Premium Residences",
+      "goods_type": "housing_premium",
+      "goods_category": "housing",
+      "initial_capital": 1500000.0,
+      "tfp": 1.3,
+      "initial_wage": 3200.0,
+      "skill_requirements": {
+        "const_carpentry": 0.7,
+        "const_electrical": 0.6,
+        "biz_project_mgmt": 0.7
+      }
+    },
+    {
+      "firm_id": "firm_housing_luxury",
+      "name": "Luxury Estates",
+      "goods_type": "housing_luxury",
+      "goods_category": "housing",
+      "initial_capital": 3000000.0,
+      "tfp": 1.5,
+      "initial_wage": 4500.0,
+      "skill_requirements": {
+        "const_carpentry": 0.8,
+        "const_electrical": 0.7,
+        "biz_project_mgmt": 0.8,
+        "creative_graphic_design": 0.6
+      }
+    },
+    {
+      "firm_id": "firm_trans_public",
+      "name": "Public Transit Authority",
+      "goods_type": "trans_public",
+      "goods_category": "transportation",
+      "initial_capital": 1000000.0,
+      "tfp": 1.0,
+      "initial_wage": 2100.0,
+      "skill_requirements": {
+        "trans_driving": 0.6,
+        "trans_logistics": 0.5,
+        "mfg_maintenance": 0.4
+      }
+    },
+    {
+      "firm_id": "firm_trans_taxi",
+      "name": "Taxi & Ride Services",
+      "goods_type": "trans_taxi",
+      "goods_category": "transportation",
+      "initial_capital": 200000.0,
+      "tfp": 1.0,
+      "initial_wage": 1800.0,
+      "skill_requirements": {
+        "trans_driving": 0.7,
+        "svc_customer_service": 0.4
+      }
+    },
+    {
+      "firm_id": "firm_trans_vehicle_economy",
+      "name": "Economy Car Dealer",
+      "goods_type": "trans_vehicle_economy",
+      "goods_category": "transportation",
+      "initial_capital": 800000.0,
+      "tfp": 1.0,
+      "initial_wage": 2200.0,
+      "skill_requirements": {
+        "mfg_assembly": 0.6,
+        "biz_sales": 0.5
+      }
+    },
+    {
+      "firm_id": "firm_trans_vehicle_standard",
+      "name": "Standard Auto Sales",
+      "goods_type": "trans_vehicle_standard",
+      "goods_category": "transportation",
+      "initial_capital": 1200000.0,
+      "tfp": 1.1,
+      "initial_wage": 2600.0,
+      "skill_requirements": {
+        "mfg_assembly": 0.7,
+        "biz_sales": 0.6
+      }
+    },
+    {
+      "firm_id": "firm_trans_vehicle_luxury",
+      "name": "Luxury Auto Dealership",
+      "goods_type": "trans_vehicle_luxury",
+      "goods_category": "transportation",
+      "initial_capital": 2500000.0,
+      "tfp": 1.3,
+      "initial_wage": 3800.0,
+      "skill_requirements": {
+        "mfg_assembly": 0.8,
+        "biz_sales": 0.8,
+        "biz_marketing": 0.6
+      }
+    },
+    {
+      "firm_id": "firm_health_basic",
+      "name": "Basic Healthcare Clinic",
+      "goods_type": "health_basic",
+      "goods_category": "healthcare",
+      "initial_capital": 300000.0,
+      "tfp": 1.0,
+      "initial_wage": 2800.0,
+      "skill_requirements": {
+        "health_nursing": 0.7,
+        "health_medical_tech": 0.5
+      }
+    },
+    {
+      "firm_id": "firm_health_dental",
+      "name": "Dental Practice",
+      "goods_type": "health_dental",
+      "goods_category": "healthcare",
+      "initial_capital": 250000.0,
+      "tfp": 1.0,
+      "initial_wage": 2900.0,
+      "skill_requirements": {
+        "health_medical_tech": 0.7,
+        "svc_customer_service": 0.4
+      }
+    },
+    {
+      "firm_id": "firm_health_specialized",
+      "name": "Specialized Medical Center",
+      "goods_type": "health_specialized",
+      "goods_category": "healthcare",
+      "initial_capital": 600000.0,
+      "tfp": 1.2,
+      "initial_wage": 3500.0,
+      "skill_requirements": {
+        "health_nursing": 0.8,
+        "health_medical_tech": 0.7,
+        "health_emergency_care": 0.6
+      }
+    },
+    {
+      "firm_id": "firm_health_wellness",
+      "name": "Wellness Center",
+      "goods_type": "health_wellness",
+      "goods_category": "healthcare",
+      "initial_capital": 200000.0,
+      "tfp": 1.1,
+      "initial_wage": 2400.0,
+      "skill_requirements": {
+        "health_physical_therapy": 0.7,
+        "health_mental_health": 0.5
+      }
+    },
+    {
+      "firm_id": "firm_edu_basic",
+      "name": "Public School",
+      "goods_type": "edu_basic",
+      "goods_category": "education",
+      "initial_capital": 500000.0,
+      "tfp": 1.0,
+      "initial_wage": 2200.0,
+      "skill_requirements": {
+        "edu_teaching": 0.7,
+        "edu_curriculum": 0.5
+      }
+    },
+    {
+      "firm_id": "firm_edu_higher",
+      "name": "University",
+      "goods_type": "edu_higher",
+      "goods_category": "education",
+      "initial_capital": 2000000.0,
+      "tfp": 1.3,
+      "initial_wage": 3200.0,
+      "skill_requirements": {
+        "edu_teaching": 0.8,
+        "edu_curriculum": 0.7,
+        "tech_programming": 0.6
+      }
+    },
+    {
+      "firm_id": "firm_edu_vocational",
+      "name": "Vocational School",
+      "goods_type": "edu_vocational",
+      "goods_category": "education",
+      "initial_capital": 400000.0,
+      "tfp": 1.0,
+      "initial_wage": 2300.0,
+      "skill_requirements": {
+        "edu_training": 0.7,
+        "mfg_machine_operation": 0.5
+      }
+    },
+    {
+      "firm_id": "firm_edu_tutoring",
+      "name": "Tutoring Center",
+      "goods_type": "edu_tutoring",
+      "goods_category": "education",
+      "initial_capital": 100000.0,
+      "tfp": 0.9,
+      "initial_wage": 1900.0,
+      "skill_requirements": {
+        "edu_tutoring": 0.7
+      }
+    },
+    {
+      "firm_id": "firm_ent_media",
+      "name": "Media & Streaming Co.",
+      "goods_type": "ent_media",
+      "goods_category": "entertainment",
+      "initial_capital": 500000.0,
+      "tfp": 1.2,
+      "initial_wage": 2800.0,
+      "skill_requirements": {
+        "tech_programming": 0.7,
+        "creative_video_production": 0.6,
+        "biz_marketing": 0.5
+      }
+    },
+    {
+      "firm_id": "firm_ent_events",
+      "name": "Events & Entertainment",
+      "goods_type": "ent_events",
+      "goods_category": "entertainment",
+      "initial_capital": 300000.0,
+      "tfp": 1.0,
+      "initial_wage": 2300.0,
+      "skill_requirements": {
+        "biz_project_mgmt": 0.6,
+        "svc_hospitality": 0.5,
+        "creative_music": 0.4
+      }
+    },
+    {
+      "firm_id": "firm_ent_hobbies",
+      "name": "Hobby Shop",
+      "goods_type": "ent_hobbies",
+      "goods_category": "entertainment",
+      "initial_capital": 80000.0,
+      "tfp": 0.9,
+      "initial_wage": 1800.0,
+      "skill_requirements": {
+        "svc_retail": 0.5,
+        "svc_customer_service": 0.4
+      }
+    },
+    {
+      "firm_id": "firm_ent_gaming",
+      "name": "Gaming Company",
+      "goods_type": "ent_gaming",
+      "goods_category": "entertainment",
+      "initial_capital": 600000.0,
+      "tfp": 1.3,
+      "initial_wage": 3200.0,
+      "skill_requirements": {
+        "tech_programming": 0.8,
+        "creative_animation": 0.7,
+        "creative_ui_ux": 0.6
+      }
+    },
+    {
+      "firm_id": "firm_ent_travel",
+      "name": "Travel Agency",
+      "goods_type": "ent_travel",
+      "goods_category": "entertainment",
+      "initial_capital": 250000.0,
+      "tfp": 1.0,
+      "initial_wage": 2400.0,
+      "skill_requirements": {
+        "biz_sales": 0.6,
+        "svc_hospitality": 0.6,
+        "trans_logistics": 0.4
+      }
+    },
+    {
+      "firm_id": "firm_util_electricity",
+      "name": "Electric Utility",
+      "goods_type": "util_electricity",
+      "goods_category": "utilities",
+      "initial_capital": 2000000.0,
+      "tfp": 1.0,
+      "initial_wage": 2800.0,
+      "skill_requirements": {
+        "const_electrical": 0.8,
+        "mfg_maintenance": 0.6,
+        "tech_networking": 0.5
+      }
+    },
+    {
+      "firm_id": "firm_util_water",
+      "name": "Water & Sewage Utility",
+      "goods_type": "util_water",
+      "goods_category": "utilities",
+      "initial_capital": 1500000.0,
+      "tfp": 1.0,
+      "initial_wage": 2500.0,
+      "skill_requirements": {
+        "const_plumbing": 0.7,
+        "mfg_maintenance": 0.6
+      }
+    },
+    {
+      "firm_id": "firm_util_internet",
+      "name": "Internet Service Provider",
+      "goods_type": "util_internet",
+      "goods_category": "utilities",
+      "initial_capital": 1000000.0,
+      "tfp": 1.2,
+      "initial_wage": 2900.0,
+      "skill_requirements": {
+        "tech_networking": 0.8,
+        "tech_programming": 0.6,
+        "svc_customer_service": 0.5
+      }
+    },
+    {
+      "firm_id": "firm_furn_basic",
+      "name": "Basic Furniture Store",
+      "goods_type": "furn_basic",
+      "goods_category": "furniture",
+      "initial_capital": 150000.0,
+      "tfp": 1.0,
+      "initial_wage": 1900.0,
+      "skill_requirements": {
+        "const_carpentry": 0.6,
+        "svc_retail": 0.4
+      }
+    },
+    {
+      "firm_id": "firm_furn_appliances",
+      "name": "Home Appliances Co.",
+      "goods_type": "furn_appliances",
+      "goods_category": "furniture",
+      "initial_capital": 300000.0,
+      "tfp": 1.1,
+      "initial_wage": 2200.0,
+      "skill_requirements": {
+        "mfg_assembly": 0.7,
+        "const_electrical": 0.5,
+        "svc_retail": 0.4
+      }
+    },
+    {
+      "firm_id": "firm_furn_decor",
+      "name": "Home Decor Shop",
+      "goods_type": "furn_decor",
+      "goods_category": "furniture",
+      "initial_capital": 120000.0,
+      "tfp": 0.9,
+      "initial_wage": 1900.0,
+      "skill_requirements": {
+        "creative_graphic_design": 0.6,
+        "svc_retail": 0.5
+      }
+    },
+    {
+      "firm_id": "firm_furn_premium",
+      "name": "Premium Furniture",
+      "goods_type": "furn_premium",
+      "goods_category": "furniture",
+      "initial_capital": 400000.0,
+      "tfp": 1.2,
+      "initial_wage": 2800.0,
+      "skill_requirements": {
+        "const_carpentry": 0.8,
+        "creative_graphic_design": 0.6,
+        "biz_sales": 0.5
+      }
+    },
+    {
+      "firm_id": "firm_other_personal_care",
+      "name": "Personal Care Products",
+      "goods_type": "other_personal_care",
+      "goods_category": "other",
+      "initial_capital": 100000.0,
+      "tfp": 1.0,
+      "initial_wage": 1800.0,
+      "skill_requirements": {
+        "mfg_assembly": 0.5,
+        "mfg_quality_control": 0.4
+      }
+    },
+    {
+      "firm_id": "firm_other_insurance",
+      "name": "Insurance Company",
+      "goods_type": "other_insurance",
+      "goods_category": "other",
+      "initial_capital": 800000.0,
+      "tfp": 1.1,
+      "initial_wage": 2600.0,
+      "skill_requirements": {
+        "biz_finance": 0.7,
+        "biz_sales": 0.6,
+        "biz_business_analysis": 0.5
+      }
+    },
+    {
+      "firm_id": "firm_other_financial",
+      "name": "Financial Services",
+      "goods_type": "other_financial",
+      "goods_category": "other",
+      "initial_capital": 1000000.0,
+      "tfp": 1.3,
+      "initial_wage": 3200.0,
+      "skill_requirements": {
+        "biz_finance": 0.8,
+        "biz_accounting": 0.7,
+        "tech_data_analysis": 0.6
+      }
+    },
+    {
+      "firm_id": "firm_other_luxury",
+      "name": "Luxury Goods Boutique",
+      "goods_type": "other_luxury",
+      "goods_category": "other",
+      "initial_capital": 600000.0,
+      "tfp": 1.4,
+      "initial_wage": 3000.0,
+      "skill_requirements": {
+        "biz_sales": 0.8,
+        "biz_marketing": 0.7,
+        "svc_customer_service": 0.6
+      }
+    }
+  ]
+}
