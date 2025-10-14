@@ -1045,3 +1045,45 @@ class Simulation:
             "current_indicators": self.get_indicators(),
             "history_length": len(self.state.history.get("gdp", [])),
         }
+
+    def add_households(self, count: int):
+        """
+        新規世帯を追加（人口ショック実験用）
+
+        Args:
+            count: 追加する世帯数
+        """
+        max_households = self.config.agents.households.max
+        current_households = len(self.households)
+
+        # 上限チェック
+        if current_households >= max_households:
+            logger.warning(
+                f"Cannot add households: already at maximum ({max_households})"
+            )
+            return
+
+        # 実際に追加する数（上限を超えない）
+        actual_count = min(count, max_households - current_households)
+
+        if actual_count > 0:
+            # 新規世帯を生成
+            generator = HouseholdProfileGenerator(
+                random_seed=self.config.simulation.random_seed + self.state.step
+            )
+            new_profiles = generator.generate(count=actual_count)
+
+            # HouseholdAgentを初期化して追加
+            for profile in new_profiles:
+                new_household = HouseholdAgent(
+                    household_id=profile.id,
+                    profile=profile,
+                    llm_interface=self.llm_interface
+                )
+                self.households.append(new_household)
+                self.state.households.append(profile)
+
+            logger.info(
+                f"Added {actual_count} new households "
+                f"(total: {len(self.households)}/{max_households})"
+            )

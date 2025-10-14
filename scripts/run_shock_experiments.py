@@ -147,16 +147,18 @@ def apply_population_shock(sim: Simulation, num_new_households: int):
         sim: シミュレーションインスタンス
         num_new_households: 追加する世帯数
     """
-    # Note: この実装は、Simulationクラスにadd_households()メソッドがあることを前提としています
-    # 実際の実装では、HouseholdProfileGeneratorを使って新規世帯を生成します
-
     original_count = len(sim.households)
-    # sim.add_households(num_new_households)  # TODO: 実装が必要
+
+    # 新規世帯を追加
+    sim.add_households(num_new_households)
+
     new_count = len(sim.households)
+    actual_added = new_count - original_count
 
     logger.warning("🚨 POPULATION SHOCK APPLIED")
     logger.warning(f"  Original household count: {original_count}")
-    logger.warning(f"  New households added: {num_new_households}")
+    logger.warning(f"  Requested households: {num_new_households}")
+    logger.warning(f"  Actually added: {actual_added}")
     logger.warning(f"  New household count: {new_count}")
 
 
