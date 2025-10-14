@@ -96,6 +96,10 @@ class GoodsMarket:
         self.unmet_demand: dict[str, float] = {}  # 財IDごとの未充足需要
         self.unsold_supply: dict[str, float] = {}  # 財IDごとの未売却在庫
 
+        # 取引履歴（価格追跡用）
+        self.recent_transactions: dict[str, list[float]] = {}  # 財IDごとの直近取引価格リスト
+        self.recent_demands: dict[str, float] = {}  # 財IDごとの直近需要量
+
         logger.info(
             f"GoodsMarket initialized: price_adjustment={enable_price_adjustment}"
         )
@@ -137,6 +141,16 @@ class GoodsMarket:
             good_transactions = self._match_good(sorted_listings, sorted_orders)
             transactions.extend(good_transactions)
 
+            # 取引価格を記録
+            if good_transactions:
+                if good_id not in self.recent_transactions:
+                    self.recent_transactions[good_id] = []
+                # 直近10取引の価格を保持
+                for txn in good_transactions:
+                    self.recent_transactions[good_id].append(txn.price)
+                # 最新10件のみ保持
+                self.recent_transactions[good_id] = self.recent_transactions[good_id][-10:]
+
             # 未充足需要と未売却在庫を記録
             total_supplied = sum(listing.quantity for listing in good_listings)
             total_demanded = sum(order.quantity for order in good_orders)
@@ -144,6 +158,7 @@ class GoodsMarket:
 
             self.unmet_demand[good_id] = max(0, total_demanded - total_sold)
             self.unsold_supply[good_id] = max(0, total_supplied - total_sold)
+            self.recent_demands[good_id] = total_demanded
 
         self.total_transactions += len(transactions)
         self.total_volume += sum(t.total_value for t in transactions)
@@ -230,9 +245,21 @@ class GoodsMarket:
         Returns:
             財IDをキーとした価格辞書
         """
-        # 実際の実装では、過去の取引履歴から価格を計算
-        # ここでは簡略化のため、空の辞書を返す
-        return {}
+        prices = {}
+        for good_id, price_list in self.recent_transactions.items():
+            if price_list:
+                # 直近の取引価格の平均
+                prices[good_id] = sum(price_list) / len(price_list)
+        return prices
+
+    def get_market_demands(self) -> dict[str, float]:
+        """
+        各財の市場需要を取得
+
+        Returns:
+            財IDをキーとした需要量辞書
+        """
+        return self.recent_demands.copy()
 
     def get_statistics(self) -> dict[str, Any]:
         """
