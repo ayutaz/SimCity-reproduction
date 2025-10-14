@@ -10,7 +10,6 @@ from pathlib import Path
 from loguru import logger
 
 from src.agents.central_bank import CentralBankAgent
-from src.agents.firm import FirmAgent
 from src.agents.government import GovernmentAgent
 from src.agents.household import HouseholdAgent, HouseholdProfileGenerator
 from src.environment.markets.financial_market import FinancialMarket
@@ -285,15 +284,6 @@ class Simulation:
             ]
         else:
             household_incomes = []
-
-        # 企業産出の集計（簡略版）
-        if self.firms:
-            firm_outputs = [
-                getattr(f.profile, "production_quantity", 0) * getattr(f.profile, "price", 100.0)
-                for f in self.firms
-            ]
-        else:
-            firm_outputs = []
 
         # GDP計算（簡略版）
         total_consumption = sum(getattr(h, "consumption", 5000.0) for h in self.households)
