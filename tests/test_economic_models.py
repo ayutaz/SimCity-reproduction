@@ -224,7 +224,11 @@ class TestEffectiveLabor:
 
 def test_data_models_serialization():
     """データモデルのシリアライズテスト"""
-    from src.models.data_models import HouseholdProfile, EducationLevel, EmploymentStatus
+    from src.models.data_models import (
+        EducationLevel,
+        EmploymentStatus,
+        HouseholdProfile,
+    )
 
     # 家計プロファイル作成
     household = HouseholdProfile(

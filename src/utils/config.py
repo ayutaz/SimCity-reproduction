@@ -6,7 +6,7 @@ YAML設定ファイルの読み込みと検証を提供
 
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 import yaml
 from pydantic import BaseModel, Field, ValidationError
@@ -18,7 +18,7 @@ class SimulationConfig(BaseModel):
     max_steps: int = Field(default=180, ge=1)
     phase1_steps: int = Field(default=36, ge=1)
     phase2_steps: int = Field(default=144, ge=1)
-    random_seed: Optional[int] = 42
+    random_seed: int | None = 42
 
 
 class AgentsConfig(BaseModel):
@@ -168,10 +168,10 @@ class LLMConfig(BaseModel):
 
     openai: OpenAIConfig = OpenAIConfig()
     vlm: VLMConfig = VLMConfig()
-    agents: Dict[str, AgentLLMConfig] = {}
+    agents: dict[str, AgentLLMConfig] = {}
 
 
-def load_yaml(file_path: str | Path) -> Dict[str, Any]:
+def load_yaml(file_path: str | Path) -> dict[str, Any]:
     """
     YAMLファイルを読み込む
 

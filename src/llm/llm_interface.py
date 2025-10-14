@@ -6,16 +6,16 @@ OpenAI APIとの統合を提供し、Function Callingによるエージェント
 
 import json
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 from loguru import logger
 
 try:
     from openai import OpenAI
-    from openai.types.chat import ChatCompletion
-except ImportError:
+except ImportError as e:
     raise ImportError(
         "OpenAI package not found. Install with: uv add openai"
-    )
+    ) from e
 
 
 class LLMInterface:
@@ -67,9 +67,9 @@ class LLMInterface:
         self,
         system_prompt: str,
         user_prompt: str,
-        functions: List[Dict[str, Any]],
-        temperature: Optional[float] = None,
-    ) -> Dict[str, Any]:
+        functions: list[dict[str, Any]],
+        temperature: float | None = None,
+    ) -> dict[str, Any]:
         """
         Function Callingを使用してLLMを呼び出す
 
@@ -152,10 +152,10 @@ class LLMInterface:
 
     def validate_response(
         self,
-        response: Dict[str, Any],
-        expected_functions: List[str],
-        validation_rules: Optional[Dict[str, Any]] = None,
-    ) -> tuple[bool, Optional[str]]:
+        response: dict[str, Any],
+        expected_functions: list[str],
+        validation_rules: dict[str, Any] | None = None,
+    ) -> tuple[bool, str | None]:
         """
         LLMレスポンスの検証
 
@@ -198,7 +198,7 @@ class LLMInterface:
 
         return True, None
 
-    def get_cost_summary(self) -> Dict[str, float]:
+    def get_cost_summary(self) -> dict[str, float]:
         """
         コストサマリーを取得
 
@@ -240,7 +240,7 @@ class LLMInterfaceFactory:
     @staticmethod
     def create_from_config(
         api_key: str,
-        config: Dict[str, Any],
+        config: dict[str, Any],
     ) -> LLMInterface:
         """
         設定ファイルからLLMInterfaceを生成

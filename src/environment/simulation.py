@@ -6,7 +6,6 @@ Simulation engine for SimCity
 
 import json
 from pathlib import Path
-from typing import Dict, List, Optional
 
 from loguru import logger
 
@@ -88,7 +87,7 @@ class Simulation:
 
         logger.info("State initialized")
 
-    def step(self) -> Dict[str, float]:
+    def step(self) -> dict[str, float]:
         """
         1ステップ（1ヶ月）を実行
 
@@ -171,7 +170,7 @@ class Simulation:
             logger.debug(f"Adding {new_households} new households")
             # 実際の家計追加はPhase 2で実装
 
-    def _calculate_indicators(self) -> Dict[str, float]:
+    def _calculate_indicators(self) -> dict[str, float]:
         """
         マクロ経済指標を計算
 
@@ -237,7 +236,7 @@ class Simulation:
             "num_firms": len(self.state.firms),
         }
 
-    def _record_history(self, indicators: Dict[str, float]):
+    def _record_history(self, indicators: dict[str, float]):
         """
         指標を履歴に記録
 
@@ -307,7 +306,7 @@ class Simulation:
 
         logger.info(f"State loaded from {filepath}")
 
-    def get_indicators(self) -> Dict[str, float]:
+    def get_indicators(self) -> dict[str, float]:
         """
         現在のマクロ経済指標を取得
 
@@ -316,7 +315,7 @@ class Simulation:
         """
         return self._calculate_indicators()
 
-    def run(self, steps: int) -> List[Dict[str, float]]:
+    def run(self, steps: int) -> list[dict[str, float]]:
         """
         複数ステップを実行
 
@@ -339,7 +338,7 @@ class Simulation:
         self._initialize_state()
         logger.info("Simulation reset")
 
-    def get_summary(self) -> Dict[str, any]:
+    def get_summary(self) -> dict[str, any]:
         """
         シミュレーションサマリーを取得
 

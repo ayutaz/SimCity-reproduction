@@ -8,8 +8,6 @@ Economic models for SimCity simulation
 - マクロ経済指標計算
 """
 
-import math
-from typing import Dict, List, Tuple
 
 import numpy as np
 
@@ -120,7 +118,7 @@ class TaxationSystem:
     税率区分に基づいて所得税を計算
     """
 
-    def __init__(self, brackets: List[Tuple[float, float]]):
+    def __init__(self, brackets: list[tuple[float, float]]):
         """
         Args:
             brackets: 税率区分のリスト [(所得閾値, 税率), ...]
@@ -288,8 +286,8 @@ class MacroeconomicIndicators:
 
     @staticmethod
     def calculate_gdp(
-        household_incomes: List[float],
-        firm_outputs: List[float],
+        household_incomes: list[float],
+        firm_outputs: list[float],
         government_spending: float = 0.0,
     ) -> float:
         """
@@ -314,7 +312,7 @@ class MacroeconomicIndicators:
 
     @staticmethod
     def calculate_inflation(
-        current_prices: Dict[str, float], previous_prices: Dict[str, float]
+        current_prices: dict[str, float], previous_prices: dict[str, float]
     ) -> float:
         """
         インフレ率を計算
@@ -375,7 +373,7 @@ class MacroeconomicIndicators:
         return unemployed / total_labor_force
 
     @staticmethod
-    def calculate_gini_coefficient(incomes: List[float]) -> float:
+    def calculate_gini_coefficient(incomes: list[float]) -> float:
         """
         Gini係数を計算（所得不平等度）
 
@@ -432,7 +430,7 @@ class MacroeconomicIndicators:
 
 
 def calculate_effective_labor(
-    workers: List[Dict[str, float]], skill_requirements: Dict[str, float]
+    workers: list[dict[str, float]], skill_requirements: dict[str, float]
 ) -> float:
     """
     実効労働量を計算

@@ -6,7 +6,7 @@ Base Agent class for SimCity
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from loguru import logger
 
@@ -47,10 +47,10 @@ class BaseAgent(ABC):
         self.memory_size = memory_size
 
         # メモリ（過去の行動履歴）
-        self.memory: List[Dict[str, Any]] = []
+        self.memory: list[dict[str, Any]] = []
 
         # エージェント固有の属性（サブクラスで設定）
-        self.attributes: Dict[str, Any] = {}
+        self.attributes: dict[str, Any] = {}
 
         logger.info(f"Agent {agent_id} ({agent_type}) initialized")
 
@@ -68,7 +68,7 @@ class BaseAgent(ABC):
         pass
 
     @abstractmethod
-    def get_available_actions(self) -> List[Dict[str, Any]]:
+    def get_available_actions(self) -> list[dict[str, Any]]:
         """
         利用可能な行動のリストを返す（OpenAI Function Calling形式）
 
@@ -99,7 +99,7 @@ class BaseAgent(ABC):
 
         return "\n".join(memory_lines)
 
-    def build_user_prompt(self, observation: Dict[str, Any]) -> str:
+    def build_user_prompt(self, observation: dict[str, Any]) -> str:
         """
         ユーザープロンプトを構築
 
@@ -128,7 +128,7 @@ Consider your profile, past actions, and current observation to make a rational 
 """
         return user_prompt
 
-    def _format_observation(self, observation: Dict[str, Any]) -> str:
+    def _format_observation(self, observation: dict[str, Any]) -> str:
         """
         観察情報をフォーマット
 
@@ -152,8 +152,8 @@ Consider your profile, past actions, and current observation to make a rational 
         return "\n".join(lines)
 
     def decide_action(
-        self, observation: Dict[str, Any], step: int
-    ) -> Dict[str, Any]:
+        self, observation: dict[str, Any], step: int
+    ) -> dict[str, Any]:
         """
         LLMを使用して行動を決定
 
@@ -215,7 +215,7 @@ Consider your profile, past actions, and current observation to make a rational 
             return self._get_fallback_action(observation)
 
     @abstractmethod
-    def _get_fallback_action(self, observation: Dict[str, Any]) -> Dict[str, Any]:
+    def _get_fallback_action(self, observation: dict[str, Any]) -> dict[str, Any]:
         """
         LLM呼び出しが失敗した場合のフォールバック行動
 
@@ -229,7 +229,7 @@ Consider your profile, past actions, and current observation to make a rational 
         """
         pass
 
-    def update_attributes(self, updates: Dict[str, Any]):
+    def update_attributes(self, updates: dict[str, Any]):
         """
         エージェントの属性を更新
 

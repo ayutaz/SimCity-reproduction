@@ -7,7 +7,6 @@ Phase 1の動作確認:
 - 簡単なエージェント意思決定
 """
 
-import os
 import sys
 from pathlib import Path
 
@@ -19,7 +18,7 @@ from dotenv import load_dotenv
 
 from src.agents.base_agent import BaseAgent, load_prompt_template
 from src.llm.llm_interface import LLMInterface
-from src.utils.config import get_api_key, get_config_dir
+from src.utils.config import get_api_key
 from src.utils.logger import setup_logger
 
 

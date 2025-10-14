@@ -11,7 +11,12 @@
       "Bash(git remote add:*)",
       "Bash(git add:*)",
       "Bash(git commit -m \"$(cat <<''EOF''\nInitial commit: Phase 0 and Phase 1 (partial) implementation\n\nPhase 0 完了:\n- プロジェクト構造作成\n- uv + ruff設定 (pyproject.toml)\n- 設定ファイル (simulation_config.yaml, llm_config.yaml)\n- 環境設定 (.env.example, .gitignore)\n- ドキュメント (README.md, CLAUDE.md, IMPLEMENTATION_PLAN.md)\n\nPhase 1 実装済み (50%):\n- LLM統合 (src/llm/llm_interface.py)\n  - OpenAI API統合\n  - Function Calling\n  - コスト追跡\n  - リトライ機構\n- プロンプトテンプレート (src/llm/prompts/)\n  - 4種類のエージェント用プロンプト\n- BaseAgent (src/agents/base_agent.py)\n  - 共通エージェント基盤\n  - メモリ管理\n- ユーティリティ (src/utils/)\n  - 設定管理 (config.py)\n  - ロガー (logger.py)\n- テスト (tests/test_llm_integration.py)\n\nPhase 1 残り:\n- データモデル (data_models.py)\n- 経済モデル (economic_models.py)\n- シミュレーションエンジン (simulation.py)\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
-      "Bash(git commit -m \"$(cat <<''EOF''\nAdd Apache 2.0 LICENSE\n\nApache License 2.0を追加し、pyproject.tomlとREADME.mdを更新\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
+      "Bash(git commit -m \"$(cat <<''EOF''\nAdd Apache 2.0 LICENSE\n\nApache License 2.0を追加し、pyproject.tomlとREADME.mdを更新\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(uv run pytest:*)",
+      "Bash(uv pip install:*)",
+      "Bash(uv run ruff:*)"
     ],
     "deny": [],
     "ask": []

@@ -6,14 +6,13 @@ loguruを使用したロギング設定を提供
 
 import sys
 from pathlib import Path
-from typing import Optional
 
 from loguru import logger
 
 
 def setup_logger(
     log_level: str = "INFO",
-    log_file: Optional[str | Path] = None,
+    log_file: str | Path | None = None,
     rotation: str = "10 MB",
     retention: str = "7 days",
     enable_console: bool = True,

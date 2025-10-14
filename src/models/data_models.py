@@ -6,7 +6,6 @@ Data models for SimCity simulation
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, Optional
 
 
 class EmploymentStatus(Enum):
@@ -52,7 +51,7 @@ class HouseholdProfile:
     name: str
     age: int
     education_level: EducationLevel
-    skills: Dict[str, float] = field(default_factory=dict)  # スキル名: レベル(0-1)
+    skills: dict[str, float] = field(default_factory=dict)  # スキル名: レベル(0-1)
 
     # 経済状態
     cash: float = 0.0
@@ -62,18 +61,18 @@ class HouseholdProfile:
 
     # 雇用状態
     employment_status: EmploymentStatus = EmploymentStatus.UNEMPLOYED
-    employer_id: Optional[int] = None
+    employer_id: int | None = None
     wage: float = 0.0
 
     # 消費嗜好（各財カテゴリへの選好度）
-    consumption_preferences: Dict[str, float] = field(default_factory=dict)
+    consumption_preferences: dict[str, float] = field(default_factory=dict)
 
     # 住居
     location: tuple[int, int] = (0, 0)
     housing_cost: float = 0.0
 
     # 保有株式（firm_id: 株式数）
-    stock_holdings: Dict[int, int] = field(default_factory=dict)
+    stock_holdings: dict[int, int] = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         """辞書形式に変換"""
@@ -125,7 +124,7 @@ class FirmProfile:
     # 生産要素
     capital: float = 100.0  # 資本ストック K
     total_factor_productivity: float = 1.0  # 全要素生産性 A
-    employees: List[int] = field(default_factory=list)  # household IDs
+    employees: list[int] = field(default_factory=list)  # household IDs
 
     # 生産・販売
     inventory: float = 0.0  # 在庫
@@ -136,12 +135,12 @@ class FirmProfile:
     # 雇用
     wage_offered: float = 1500.0  # 提示賃金
     job_openings: int = 0  # 求人数
-    skill_requirements: Dict[str, float] = field(
+    skill_requirements: dict[str, float] = field(
         default_factory=dict
     )  # 必要スキル
 
     # 所有構造
-    shareholders: Dict[int, int] = field(
+    shareholders: dict[int, int] = field(
         default_factory=dict
     )  # household_id: 株式数
 
@@ -193,7 +192,7 @@ class GovernmentState:
     expenditure: float = 0.0  # 支出（当期）
 
     # 税制
-    income_tax_brackets: List[tuple[float, float]] = field(
+    income_tax_brackets: list[tuple[float, float]] = field(
         default_factory=lambda: [
             (0, 0.0),
             (20000, 0.1),
@@ -294,9 +293,9 @@ class MarketState:
     job_vacancy_rate: float = 0.0  # 求人率
 
     # 財市場
-    goods_prices: Dict[str, float] = field(default_factory=dict)  # 商品名: 価格
-    goods_demand: Dict[str, float] = field(default_factory=dict)  # 商品名: 需要量
-    goods_supply: Dict[str, float] = field(default_factory=dict)  # 商品名: 供給量
+    goods_prices: dict[str, float] = field(default_factory=dict)  # 商品名: 価格
+    goods_demand: dict[str, float] = field(default_factory=dict)  # 商品名: 需要量
+    goods_supply: dict[str, float] = field(default_factory=dict)  # 商品名: 供給量
 
     # 金融市場
     interest_rate: float = 0.02
@@ -325,23 +324,23 @@ class SimulationState:
     step: int = 0
     phase: str = "move_in"  # "move_in" or "development"
 
-    households: List[HouseholdProfile] = field(default_factory=list)
-    firms: List[FirmProfile] = field(default_factory=list)
-    government: Optional[GovernmentState] = None
-    central_bank: Optional[CentralBankState] = None
+    households: list[HouseholdProfile] = field(default_factory=list)
+    firms: list[FirmProfile] = field(default_factory=list)
+    government: GovernmentState | None = None
+    central_bank: CentralBankState | None = None
     market: MarketState = field(default_factory=MarketState)
 
     # 履歴データ（時系列記録用）
-    history: Dict[str, List[float]] = field(default_factory=dict)
+    history: dict[str, list[float]] = field(default_factory=dict)
 
-    def get_household(self, household_id: int) -> Optional[HouseholdProfile]:
+    def get_household(self, household_id: int) -> HouseholdProfile | None:
         """IDから家計を取得"""
         for h in self.households:
             if h.id == household_id:
                 return h
         return None
 
-    def get_firm(self, firm_id: int) -> Optional[FirmProfile]:
+    def get_firm(self, firm_id: int) -> FirmProfile | None:
         """IDから企業を取得"""
         for f in self.firms:
             if f.id == firm_id:
