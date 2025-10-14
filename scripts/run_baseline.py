@@ -264,7 +264,7 @@ def validate_results(results: dict, output_dir: Path):
     summary = validation_results["summary"]
     logger.info("\nValidation Summary:")
     logger.info(f"  Success rate: {summary['success_rate']:.1%}")
-    logger.info(f"  Passed: {summary['passed']}/{summary['total']}")
+    logger.info(f"  Passed: {summary['valid']}/{summary['total']}")
     logger.info("")
 
     # 各現象の結果

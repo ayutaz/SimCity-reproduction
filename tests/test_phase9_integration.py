@@ -218,9 +218,18 @@ class TestFoodExpenditureRatio:
 
         ratios = simulation.state.history.get("food_expenditure_ratios", [])
 
+        # ratiosは各ステップごとに世帯のリストが格納されているため、フラット化する
+        all_ratios = []
+        for step_ratios in ratios:
+            if isinstance(step_ratios, list):
+                all_ratios.extend(step_ratios)
+            else:
+                # 古い形式（floatの場合）
+                all_ratios.append(step_ratios)
+
         # 少なくとも1つは0.2以外の値があることを確認
         # （すべて0.0の場合は取引がない可能性があるのでスキップ）
-        non_zero_ratios = [r for r in ratios if r > 0]
+        non_zero_ratios = [r for r in all_ratios if r > 0]
 
         if non_zero_ratios:
             # 0.2のみでないことを確認

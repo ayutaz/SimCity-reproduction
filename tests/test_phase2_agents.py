@@ -196,7 +196,9 @@ class TestFirmAgent:
         sample_firm_profile.capital = 50000.0
 
         agent = FirmAgent(sample_firm_profile, mock_llm)
-        capacity = agent.calculate_production_capacity()
+        # Phase 9以降: households引数が必要（スキルマッチング計算用）
+        # ダミーの空リストを渡す（従業員IDが見つからない場合はデフォルト値を使用）
+        capacity = agent.calculate_production_capacity(households=[])
 
         # Cobb-Douglas: Y = A * L^(1-α) * K^α
         # 生産能力が0より大きいことを確認

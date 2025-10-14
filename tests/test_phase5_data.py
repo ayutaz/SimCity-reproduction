@@ -106,7 +106,7 @@ class TestHouseholdProfileGenerator:
             assert avg_skills_grad > avg_skills_hs
 
     def test_employment_rate(self, generator):
-        """Test employment rate is around 90%"""
+        """Test employment rate (Phase 9.9.4: 全員失業状態で開始)"""
         profiles = generator.generate(count=200)
 
         employed = sum(
@@ -114,8 +114,11 @@ class TestHouseholdProfileGenerator:
         )
         employment_rate = employed / len(profiles)
 
-        # Should be around 90% (85-95% range)
-        assert 0.85 <= employment_rate <= 0.95
+        # Phase 9.9.4以降: 全世帯は失業状態で開始し、労働市場でマッチングされる
+        assert employment_rate == 0.0  # 全員失業状態で開始
+
+        # 全員が UNEMPLOYED であることを確認
+        assert all(p.employment_status == EmploymentStatus.UNEMPLOYED for p in profiles)
 
     def test_consumption_preferences(self, generator):
         """Test consumption preferences are normalized"""

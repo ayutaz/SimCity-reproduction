@@ -152,19 +152,19 @@ class TestMarketIntegration:
 
     def test_financial_market_operations(self, financial_market):
         """Test financial market deposit and loan operations"""
-        # Test deposits
+        # Test deposits (Phase 9.10.1: 預金額を増やして LTD 比率 90% 制限に対応)
         deposit_requests = [
-            DepositRequest(household_id=1, amount=1000.0),
-            DepositRequest(household_id=2, amount=2000.0),
+            DepositRequest(household_id=1, amount=5000.0),
+            DepositRequest(household_id=2, amount=5000.0),
         ]
 
         deposit_results = financial_market.process_deposits(deposit_requests)
         assert len(deposit_results) == 2
 
         total_deposits = sum(r.amount for r in deposit_results)
-        assert total_deposits == 3000.0
+        assert total_deposits == 10000.0
 
-        # Test loans
+        # Test loans (総貸出 8000, 総預金 10000 → LTD 比率 80% < 90% ✓)
         loan_requests = [
             LoanRequest(firm_id=1, amount=5000.0, purpose="expansion"),
             LoanRequest(firm_id=2, amount=3000.0, purpose="inventory"),
@@ -178,9 +178,10 @@ class TestMarketIntegration:
 
         # Verify statistics
         stats = financial_market.get_statistics()
-        assert stats["total_deposits"] == 3000.0
+        assert stats["total_deposits"] == 10000.0
         assert stats["total_loans"] == 8000.0
         assert stats["loan_to_deposit_ratio"] > 0
+        assert stats["loan_to_deposit_ratio"] <= 0.9  # LTD 比率が 90% 以下であることを確認
 
     def test_multi_market_integration(
         self, labor_market, goods_market, financial_market, test_households, test_firms
@@ -454,7 +455,8 @@ class TestStatePersistence:
             assert "history" in state_dict
 
             assert state_dict["step"] == 3
-            assert len(state_dict["households"]) == 10
+            # Move-in フェーズでは毎ステップ5世帯追加: 10 + 5*3 = 25
+            assert len(state_dict["households"]) == 25
             assert len(state_dict["firms"]) == 3
         finally:
             # Cleanup
@@ -480,7 +482,8 @@ class TestStatePersistence:
 
             # Verify state restored
             assert sim2.state.step == 5
-            assert len(sim2.state.households) == 10
+            # Move-in フェーズでは毎ステップ5世帯追加: 10 + 5*5 = 35
+            assert len(sim2.state.households) == 35
             assert len(sim2.state.firms) == 3
             assert len(sim2.state.history["gdp"]) == 5
         finally:

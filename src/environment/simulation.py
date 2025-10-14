@@ -922,7 +922,8 @@ class Simulation:
                 self.state.history["demands"][good_id] = []
             self.state.history["demands"][good_id].append(demand)
 
-        # 食料支出比率を計算して記録
+        # 食料支出比率を計算して記録（Engel's Law検証用）
+        # 全世帯分を記録（取引がない世帯は0.0）
         food_expenditure_ratios = []
         for household in self.households:
             total_spending = getattr(household, 'total_spending', 0.0)
@@ -930,15 +931,18 @@ class Simulation:
 
             if total_spending > 0:
                 ratio = food_spending / total_spending
-                food_expenditure_ratios.append(ratio)
+            else:
+                ratio = 0.0  # 取引がない世帯は0
+            food_expenditure_ratios.append(ratio)
 
-        # 平均食料支出比率を記録
-        if food_expenditure_ratios:
-            avg_ratio = sum(food_expenditure_ratios) / len(food_expenditure_ratios)
-            self.state.history["food_expenditure_ratios"].append(avg_ratio)
-        else:
-            # 取引がない場合は0を記録
-            self.state.history["food_expenditure_ratios"].append(0.0)
+        # 世帯ごとの食料支出比率を記録
+        self.state.history["food_expenditure_ratios"].append(food_expenditure_ratios)
+
+        # 世帯ごとの所得を記録（Engel's Law検証用）
+        household_incomes = [
+            getattr(h.profile, "monthly_income", 0.0) for h in self.households
+        ]
+        self.state.history["household_incomes"].append(household_incomes)
 
         # 次のステップのために支出をリセット
         for household in self.households:
