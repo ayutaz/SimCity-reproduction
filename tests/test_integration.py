@@ -374,8 +374,9 @@ class TestSimulationExecution:
         sim.run(steps=5)
         assert sim.state.step == 5
 
-        # Reset
-        sim.reset()
+        # Reset (need to mock env var again)
+        with patch.dict(os.environ, {"OPENAI_API_KEY": "test_api_key_for_testing"}):
+            sim.reset()
 
         # Verify reset
         assert sim.state.step == 0

@@ -178,14 +178,29 @@ class Simulation:
         """市場の初期化"""
         logger.info("Initializing markets...")
 
-        # 労働市場
-        self.labor_market = LaborMarket(config=self.config.markets.labor.model_dump())
+        # 労働市場（必要なパラメータのみ抽出）
+        labor_config = self.config.markets.labor.model_dump()
+        labor_params = {
+            k: v for k, v in labor_config.items()
+            if k in ["matching_probability", "consider_distance", "max_commute_distance"]
+        }
+        self.labor_market = LaborMarket(**labor_params)
 
-        # 財市場
-        self.goods_market = GoodsMarket(config=self.config.markets.goods.model_dump())
+        # 財市場（必要なパラメータのみ抽出）
+        goods_config = self.config.markets.goods.model_dump()
+        goods_params = {
+            k: v for k, v in goods_config.items()
+            if k in ["price_adjustment_speed", "demand_elasticity", "inventory_target"]
+        }
+        self.goods_market = GoodsMarket(**goods_params)
 
-        # 金融市場
-        self.financial_market = FinancialMarket(config=self.config.markets.financial.model_dump())
+        # 金融市場（必要なパラメータのみ抽出）
+        financial_config = self.config.markets.financial.model_dump()
+        financial_params = {
+            k: v for k, v in financial_config.items()
+            if k in ["default_deposit_rate", "default_loan_rate", "reserve_requirement"]
+        }
+        self.financial_market = FinancialMarket(**financial_params)
 
         self.state.market = MarketState()
 
