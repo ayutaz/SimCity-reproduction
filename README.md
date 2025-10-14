@@ -95,10 +95,10 @@ uv run streamlit run app.py
 ### テストの実行
 
 ```bash
-# 全テストの実行（165テスト）
+# 全テストの実行（189テスト）
 uv run pytest
 
-# カバレッジ付き
+# カバレッジ付き（カバレッジ: 86%）
 uv run pytest --cov=src --cov-report=html
 
 # 特定のテストファイル
@@ -158,24 +158,29 @@ SimCity/
 │       ├── map_generator.py         # マップ可視化 (348行)
 │       ├── plots.py                 # 経済グラフ生成 (561行)
 │       └── dashboard.py             # Streamlitダッシュボード (573行)
-├── tests/                   # テスト（165テスト、100%成功）
+├── tests/                   # テスト（189テスト、100%成功、カバレッジ86%）
 │   ├── test_dashboard.py            # 4テスト
 │   ├── test_economic_models.py      # 18テスト
 │   ├── test_financial_market.py     # 5テスト
 │   ├── test_geography.py            # 20テスト
 │   ├── test_goods_market.py         # 4テスト
 │   ├── test_household_agent.py      # 14テスト
-│   ├── test_integration.py          # 15テスト（Phase 6.2新規）
+│   ├── test_integration.py          # 15テスト（Phase 6.2）
 │   ├── test_labor_market.py         # 8テスト
 │   ├── test_llm_integration.py      # 2テスト
 │   ├── test_map_generator.py        # 14テスト
+│   ├── test_performance.py          # 6テスト（Phase 6.1）
 │   ├── test_phase2_agents.py        # 27テスト
 │   ├── test_phase5_data.py          # 14テスト
-│   └── test_plots.py                # 20テスト
+│   ├── test_plots.py                # 20テスト
+│   ├── test_robustness.py           # 6テスト（Phase 6.4）
+│   └── test_validation.py           # 12テスト（Phase 6.3）
 ├── config/                 # 設定ファイル
 │   ├── simulation_config.yaml      # シミュレーション設定
 │   └── llm_config.yaml             # LLM設定
-├── experiments/            # 実験スクリプト（未実装）
+├── experiments/            # 実験・検証スクリプト（Phase 6完了）
+│   ├── validation.py               # 経済現象検証システム (560行)
+│   └── robustness_test.py          # ロバストネステストシステム (440行)
 ├── pyproject.toml          # プロジェクト設定（uv管理）
 ├── LICENSE                 # Apache License 2.0
 ├── README.md               # 本ファイル
@@ -227,15 +232,26 @@ SimCity/
 - **初期データセット**: 200世帯データ生成スクリプト + JSONデータ（224.8 KB）
 - **テスト**: 14/14テスト成功
 
-### Phase 6: 統合テスト・検証（部分完了: 4/15タスク）
+### Phase 6: 統合テスト・検証（完了: 15/15タスク）✅
+- **Phase 6.1 単体テスト補完**: ✅ 完了（6テスト、カバレッジ86%）
+  - パフォーマンステスト（世帯生成、Gini係数計算、生産関数）
+  - スケーラビリティテスト（100/200/500世帯）
+  - カバレッジ目標80%達成（実績86%）
 - **Phase 6.2 統合テスト**: ✅ 完了（15テスト、100%成功）
   - 市場メカニズム統合テスト
   - シミュレーション実行テスト（12ステップ）
   - 状態保存/復元テスト
   - 地理システム統合テスト
-- **Phase 6.1 単体テスト補完**: 待機
-- **Phase 6.3 経済現象検証**: 待機（7つの経済法則）
-- **Phase 6.4 ロバストネステスト**: 待機
+- **Phase 6.3 経済現象検証**: ✅ 完了（12テスト、7つの経済法則）
+  - Phillips Curve、Okun's Law、Beveridge Curve
+  - Price Elasticity、Engel's Law
+  - Investment Volatility、Price Stickiness
+  - 統計的検証システム（experiments/validation.py）
+- **Phase 6.4 ロバストネステスト**: ✅ 完了（6テスト）
+  - 定性的一致検証（7つの経済現象）
+  - 統計的有意性検証（変動係数による安定性評価）
+  - トレンド一致性検証（時系列相関分析）
+  - ロバストネステストシステム（experiments/robustness_test.py）
 
 ### Phase 7-8: 実験・最適化・配布（未実装）
 - 外生ショック実験
@@ -245,14 +261,15 @@ SimCity/
 ## テスト結果
 
 ```bash
-全165テスト実行: 165/165成功 (100%)
+全189テスト実行: 189/189成功 (100%)
 - Phase 1: 20テスト (経済モデル18 + LLM統合2)
 - Phase 2: 41テスト (世帯14 + 全エージェント27)
 - Phase 3: 17テスト (労働市場8 + 財市場4 + 金融市場5)
 - Phase 4: 58テスト (地理20 + マップ14 + グラフ20 + ダッシュボード4)
 - Phase 5: 14テスト (データ生成・検証)
-- Phase 6: 15テスト (統合テスト・Phase 6.2)
+- Phase 6: 39テスト (統合15 + 検証12 + ロバストネス6 + パフォーマンス6)
 
+カバレッジ: 86%（目標80%達成）
 コード品質: ruff All checks passed
 ```
 
@@ -343,7 +360,7 @@ uv run ruff check --fix src/ tests/
 ## ドキュメント
 
 - [CLAUDE.md](CLAUDE.md) - アーキテクチャと実装ガイド
-- [TASKS.md](TASKS.md) - 詳細なタスク管理・進捗追跡（108/134タスク完了、81%）
+- [TASKS.md](TASKS.md) - 詳細なタスク管理・進捗追跡（119/134タスク完了、89%）
 - [2510.01297v1.md](2510.01297v1.md) - 元論文（マークダウン版）
 
 ## ロードマップ
@@ -354,11 +371,11 @@ uv run ruff check --fix src/ tests/
 - [x] **Phase 3**: 市場メカニズム（完了）
 - [x] **Phase 4**: 地理と可視化（完了）
 - [x] **Phase 5**: データ準備（完了）
-- [ ] **Phase 6**: 統合テストとバリデーション（部分完了: Phase 6.2のみ）
+- [x] **Phase 6**: 統合テストとバリデーション（完了）✅
 - [ ] **Phase 7**: 実験と最適化（待機）
 - [ ] **Phase 8**: 配布準備（待機）
 
-**現在の進捗**: Phase 0-5 完了 + Phase 6.2 完了（108/134タスク、81%）
+**現在の進捗**: Phase 0-6 完了（119/134タスク、89%）
 
 詳細は [TASKS.md](TASKS.md) を参照してください。
 

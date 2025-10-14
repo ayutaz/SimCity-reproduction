@@ -89,69 +89,84 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - リアルタイム可視化
 - テスト: 58/58成功
 
-**Phase 5: データ準備（部分完了 6/8）**
-- スキルデータ（`src/data/skill_types.py` 525行）
+**Phase 5: データ準備（完了 8/8）** ✅
+- スキルデータ（`src/data/skill_types.py` 410行）
   - 58種類のスキル定義
   - 10カテゴリ
   - 賃金乗数計算
-- 財データ（`src/data/goods_types.py` 528行）
+- 財データ（`src/data/goods_types.py` 342行）
   - 44種類の財定義
   - 10カテゴリ
   - 必需品22、奢侈品22
-- 企業テンプレート（`src/data/firm_templates.json` 598行）
-  - 44企業テンプレート
+- 企業テンプレート（`data/firm_templates/` 44ファイル）
+  - 44企業テンプレート（JSON形式）
 - 世帯プロファイルジェネレータ（`src/agents/household.py`）
   - Lognormal所得分布
   - スキル・年齢・教育レベル生成
-- 初期データ生成スクリプト（`scripts/generate_initial_households.py`）
+- 初期データ生成スクリプト（`scripts/generate_initial_households.py` 155行）
   - 200世帯データセット生成
-- テスト: 14/14成功
+  - data/initial_households.json (224.8 KB)
+- テスト: 14/14成功 ✅
 
-**Phase 6: 統合テスト・検証（部分完了 4/15）**
+**Phase 6: 統合テスト・検証（完了 15/15）** ✅
+- **Phase 6.1 単体テスト補完**: ✅ 完了（`tests/test_performance.py` 104行）
+  - パフォーマンステスト（6テスト）
+  - カバレッジ: 86%達成（目標80%超過）
 - **Phase 6.2 統合テスト**: ✅ 完了（`tests/test_integration.py` 585行）
   - 市場メカニズム統合テスト（5テスト）
   - シミュレーション実行テスト（5テスト）
   - 状態保存/復元テスト（4テスト）
   - 地理システム統合テスト（2テスト）
   - テスト結果: 15/15成功 ✅
+- **Phase 6.3 経済現象検証**: ✅ 完了（`experiments/validation.py` 560行）
+  - 7つの経済現象検証システム（12テスト）
+  - Phillips Curve、Okun's Law、Beveridge Curve
+  - Price Elasticity、Engel's Law
+  - Investment Volatility、Price Stickiness
+  - テスト結果: 12/12成功 ✅
+- **Phase 6.4 ロバストネステスト**: ✅ 完了（`experiments/robustness_test.py` 440行）
+  - 定性的一致検証（7つの経済現象）
+  - 統計的有意性検証（変動係数による安定性評価）
+  - トレンド一致性検証（時系列相関分析）
+  - テスト結果: 6/6成功 ✅
 
 ### テスト結果
 
 ```
-全165テスト実行: 165/165成功 (100%)
-- test_economic_models.py: 18テスト
-- test_financial_market.py: 5テスト
-- test_geography.py: 20テスト
-- test_goods_market.py: 4テスト
-- test_household_agent.py: 14テスト
-- test_labor_market.py: 8テスト
-- test_llm_integration.py: 2テスト
-- test_map_generator.py: 14テスト
-- test_phase2_agents.py: 27テスト
-- test_plots.py: 20テスト
-- test_dashboard.py: 4テスト
-- test_phase5_data.py: 14テスト (Phase 5データ生成)
-- test_integration.py: 15テスト (Phase 6.2統合テスト)
+全189テスト実行: 189/189成功 (100%)
+- test_economic_models.py: 18テスト (Phase 1)
+- test_llm_integration.py: 2テスト (Phase 1)
+- test_household_agent.py: 14テスト (Phase 2)
+- test_phase2_agents.py: 27テスト (Phase 2)
+- test_labor_market.py: 8テスト (Phase 3)
+- test_goods_market.py: 4テスト (Phase 3)
+- test_financial_market.py: 5テスト (Phase 3)
+- test_geography.py: 20テスト (Phase 4)
+- test_map_generator.py: 14テスト (Phase 4)
+- test_plots.py: 20テスト (Phase 4)
+- test_dashboard.py: 4テスト (Phase 4)
+- test_phase5_data.py: 14テスト (Phase 5)
+- test_integration.py: 15テスト (Phase 6.2)
+- test_validation.py: 12テスト (Phase 6.3)
+- test_robustness.py: 6テスト (Phase 6.4)
+- test_performance.py: 6テスト (Phase 6.1)
 
+カバレッジ: 86%（目標80%達成）
 コード品質: ruff All checks passed
 ```
 
 ### 未実装フェーズ
 
-**Phase 6: 統合テスト・検証（部分完了: Phase 6.2完了、残り11タスク）**
-- ✅ Phase 6.2: 統合テスト（完了）
-- Phase 6.1: Unit Test補完（3タスク）
-- Phase 6.3: 経済現象検証（7つの曲線、7タスク）
-- Phase 6.4: ロバストネステスト（3タスク）
-- Phase 6.5: 外生ショック実験（1タスク）
+**Phase 7: 実験・最適化（11タスク）**
+- Phase 7.1: ベースライン実行（180ステップ）
+- Phase 7.2: 外生ショック実験（価格・政策・人口）
+- Phase 7.3: パフォーマンス最適化（LLM呼び出し削減、キャッシング）
+- Phase 7.4: ドキュメント整備（実験結果、使い方ガイド）
 
-**Phase 7: 実験・最適化**
-- パフォーマンス最適化
-- コスト削減
-
-**Phase 8: 配布準備**
-- ドキュメント整備
-- CI/CD設定
+**Phase 8: 配布準備（9タスク）**
+- Phase 8.1: パッケージング（Docker化等）
+- Phase 8.2: CI/CD設定（GitHub Actions）
+- Phase 8.3: デモ環境（Streamlit Cloud等）
 
 ## アーキテクチャの理解
 
@@ -280,32 +295,40 @@ SimCity/
 │       ├── plots.py               # 経済グラフ (561行)
 │       └── dashboard.py           # Streamlitダッシュボード (573行)
 ├── scripts/                       # Phase 5スクリプト
-│   └── generate_initial_households.py  # 初期世帯データ生成 (154行)
-├── tests/                         # 165テスト、100%成功
+│   └── generate_initial_households.py  # 初期世帯データ生成 (155行)
+├── data/                          # Phase 5データ
+│   ├── firm_templates/            # 44企業テンプレート（44ファイル）
+│   └── initial_households.json    # 200世帯初期データ (224.8 KB)
+├── experiments/                   # Phase 6検証システム
+│   ├── validation.py              # 経済現象検証 (560行)
+│   └── robustness_test.py         # ロバストネステスト (440行)
+├── tests/                         # 189テスト、100%成功、カバレッジ86%
 │   ├── test_dashboard.py          # 4テスト
 │   ├── test_economic_models.py    # 18テスト
 │   ├── test_financial_market.py   # 5テスト
 │   ├── test_geography.py          # 20テスト
 │   ├── test_goods_market.py       # 4テスト
 │   ├── test_household_agent.py    # 14テスト
+│   ├── test_integration.py        # 15テスト (Phase 6.2)
 │   ├── test_labor_market.py       # 8テスト
 │   ├── test_llm_integration.py    # 2テスト
 │   ├── test_map_generator.py      # 14テスト
+│   ├── test_performance.py        # 6テスト (Phase 6.1)
 │   ├── test_phase2_agents.py      # 27テスト
-│   ├── test_plots.py              # 20テスト
 │   ├── test_phase5_data.py        # 14テスト (Phase 5)
-│   └── test_integration.py        # 15テスト (Phase 6.2)
+│   ├── test_plots.py              # 20テスト
+│   ├── test_robustness.py         # 6テスト (Phase 6.4)
+│   └── test_validation.py         # 12テスト (Phase 6.3)
 ├── config/
 │   ├── simulation_config.yaml     # シミュレーション設定
 │   └── llm_config.yaml            # LLM設定
-├── experiments/                   # 未実装
 ├── pyproject.toml                 # uv管理
 ├── .env.example
 ├── .gitignore
 ├── LICENSE                        # Apache 2.0
 ├── README.md
 ├── CLAUDE.md                      # 本ファイル
-└── TASKS.md                       # 進捗管理（108/134完了、81%）
+└── TASKS.md                       # 進捗管理（119/134完了、89%）
 ```
 
 ## 主要技術スタック
@@ -562,23 +585,28 @@ class CustomMarket:
 
 ## 次のステップ推奨
 
-### オプション1: Phase 6 - 統合テスト・経済現象検証
-- シミュレーション全体の統合テスト
-- 7つの経済現象の検証
-  - Phillips Curve（フィリップス曲線）
-  - Okun's Law（オークンの法則）
-  - Beveridge Curve（ベバリッジ曲線）
-  - Price Elasticity（価格弾力性）
-  - Engel's Law（エンゲルの法則）
-  - Investment Volatility（投資のボラティリティ）
-  - Price Stickiness（価格の粘着性）
+### Phase 7: 実験・最適化（推奨）
+Phase 0-6が完了したので、実験フェーズに進むことができます：
 
-### オプション2: Phase 5.4 - 世帯プロファイル生成完了
-- 200世帯の初期データ生成
-- 年齢・スキル分布の実装
-- 初期資産配分
+#### Phase 7.1: ベースライン実行
+- 180ステップ（15年）のシミュレーション実行
+- 全経済指標の記録
+- 可視化生成
 
-### オプション3: Phase 7 - 実験と最適化
-- パフォーマンス最適化
-- LLMコスト削減
-- 並列処理の実装
+#### Phase 7.2: 外生ショック実験
+- 価格ショック実験（±50%）
+- 政策ショック実験（金利変更等）
+- 人口ショック実験
+
+#### Phase 7.3: パフォーマンス最適化
+- LLM呼び出し回数削減
+- キャッシング戦略（プロンプト再利用）
+- バッチ処理最適化
+- メモリ使用量削減
+- 目標コスト: $15-18/180ステップ（現在: $21.6）
+
+#### Phase 7.4: ドキュメント整備
+- README更新
+- API ドキュメント生成
+- 実験結果まとめ
+- 使い方ガイド作成
