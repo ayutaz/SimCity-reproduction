@@ -32,7 +32,10 @@
       "Bash(if [ ! -f .env ])",
       "Bash(then cp .env.example .env)",
       "Bash(else echo \".env file already exists\")",
-      "Bash(fi)"
+      "Bash(fi)",
+      "Bash(if exist:*)",
+      "Bash(cat:*)",
+      "Bash(test:*)"
     ],
     "deny": [],
     "ask": []
