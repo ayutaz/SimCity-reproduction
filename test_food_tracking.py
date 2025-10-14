@@ -47,6 +47,16 @@ if food_ratios:
 prices = sim.state.history.get("prices", {})
 print(f"\nPrice tracking enabled for {len(prices)} goods")
 
+# 実質GDPの確認
+nominal_gdp = sim.state.history.get("gdp", [])
+real_gdp = sim.state.history.get("real_gdp", [])
+
+if nominal_gdp and real_gdp:
+    print(f"\n=== GDP Comparison (Nominal vs Real) ===")
+    for i in range(min(len(nominal_gdp), len(real_gdp))):
+        deflator = (nominal_gdp[i] / real_gdp[i] * 100) if real_gdp[i] > 0 else 100
+        print(f"  Step {i}: Nominal=${nominal_gdp[i]:.2f}, Real=${real_gdp[i]:.2f}, Deflator={deflator:.2f}")
+
 # 結果を保存
 output_dir = Path("experiments/food_tracking_test")
 sim.save_results(output_dir)

@@ -96,6 +96,9 @@ class Simulation:
             "demands": {},
         }
 
+        # 基準年価格（ステップ0で設定）
+        self.base_year_prices = None
+
         logger.info("State initialized")
 
     def _initialize_agents(self):
@@ -759,9 +762,36 @@ class Simulation:
             else 0.02
         )
 
+        # 実質GDPの計算
+        real_gdp = gdp  # デフォルトは名目GDPと同じ
+
+        # 価格データから価格指数を計算
+        current_prices = self.goods_market.get_market_prices()
+
+        if current_prices:
+            # ステップ0で基準年価格を保存
+            if self.base_year_prices is None:
+                self.base_year_prices = current_prices.copy()
+
+            # 価格指数を計算（基準年=100）
+            if self.base_year_prices:
+                # 共通の財IDのみで計算
+                common_goods = set(current_prices.keys()) & set(self.base_year_prices.keys())
+
+                if common_goods:
+                    # 平均価格比で価格指数を計算
+                    current_avg = sum(current_prices[g] for g in common_goods) / len(common_goods)
+                    base_avg = sum(self.base_year_prices[g] for g in common_goods) / len(common_goods)
+
+                    if base_avg > 0:
+                        price_index = (current_avg / base_avg) * 100.0
+
+                        # 実質GDP = 名目GDP / (価格指数 / 100)
+                        real_gdp = gdp / (price_index / 100.0)
+
         return {
             "gdp": gdp,
-            "real_gdp": gdp,  # TODO: 実質GDPは別途計算
+            "real_gdp": real_gdp,
             "inflation": inflation,
             "unemployment_rate": unemployment_rate,
             "gini": gini,
