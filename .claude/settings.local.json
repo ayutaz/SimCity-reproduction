@@ -23,7 +23,9 @@
       "Bash(findstr:*)",
       "Bash(if not exist experiments mkdir experiments)",
       "Bash(if not exist .githubworkflows mkdir .githubworkflows)",
-      "Bash(if exist nul del nul)"
+      "Bash(if exist nul del nul)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:api.github.com)"
     ],
     "deny": [],
     "ask": []

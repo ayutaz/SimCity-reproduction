@@ -16,7 +16,6 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.agents.household import HouseholdProfileGenerator
-from src.environment.geography import BuildingType, CityMap
 from src.models.economic_models import MacroeconomicIndicators, ProductionFunction
 
 
@@ -52,7 +51,7 @@ class TestPerformance:
 
         # Calculate Gini coefficient 1000 times
         for _ in range(1000):
-            gini = indicators.calculate_gini_coefficient(household_incomes)
+            _ = indicators.calculate_gini_coefficient(household_incomes)
 
         elapsed = time.time() - start
 
@@ -69,7 +68,7 @@ class TestPerformance:
 
         # Calculate production 10000 times
         for _ in range(10000):
-            output = prod_func.calculate_output(labor=10.0, capital=20.0)
+            _ = prod_func.calculate_output(labor=10.0, capital=20.0)
 
         elapsed = time.time() - start
 

@@ -127,7 +127,7 @@ class TestRobustnessTest:
         assert "gini_coefficient" in result
 
         # Each indicator should have statistics
-        for indicator, stats in result.items():
+        for _indicator, stats in result.items():
             assert "mean" in stats
             assert "std" in stats
             assert "min" in stats
@@ -144,7 +144,7 @@ class TestRobustnessTest:
         assert "gdp" in result
         assert "unemployment_rate" in result
 
-        for indicator, info in result.items():
+        for _indicator, info in result.items():
             assert "trend_directions" in info
             assert "consistent" in info
             assert "correlation_matrix" in info

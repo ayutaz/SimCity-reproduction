@@ -16,8 +16,7 @@ from scipy import stats
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.environment.simulation import Simulation
-from src.utils.config import SimCityConfig, load_config
+from src.utils.config import load_config
 from src.utils.logger import setup_logger
 
 
@@ -215,7 +214,7 @@ class EconomicPhenomenaValidator:
             # 弾力性 = (需要変化率) / (価格変化率)
             # ゼロ除算とnanを除外
             elasticities = []
-            for pc, dc in zip(price_change, demand_change):
+            for pc, dc in zip(price_change, demand_change, strict=False):
                 if abs(pc) > 1e-6 and not np.isnan(dc):
                     elasticities.append(dc / pc)
 
@@ -283,7 +282,7 @@ class EconomicPhenomenaValidator:
         food_ratios = []
 
         for step_incomes, step_ratios in zip(
-            self.history["household_incomes"], self.history["food_expenditure_ratios"]
+            self.history["household_incomes"], self.history["food_expenditure_ratios"], strict=False
         ):
             incomes.extend(step_incomes)
             food_ratios.extend(step_ratios)
@@ -505,7 +504,7 @@ def run_validation_experiment(
     logger.info(f"Starting validation experiment: {steps} steps")
 
     # 設定を読み込み
-    config = load_config(config_path)
+    _ = load_config(config_path)  # 将来の実装用に読み込むが現在は未使用
 
     # TODO: 実際のシミュレーション実行
     # NOTE: LLM API呼び出しが必要なため、ここでは省略
@@ -517,7 +516,7 @@ def run_validation_experiment(
     )
 
     # サンプルデータ構造を示す
-    sample_data = {
+    _ = {  # 将来の実装用サンプル構造（現在は未使用）
         "history": {
             "gdp": [100 + i * 2 for i in range(steps)],
             "inflation": [0.02 + np.random.randn() * 0.01 for _ in range(steps)],

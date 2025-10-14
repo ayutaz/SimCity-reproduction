@@ -262,7 +262,7 @@ def validate_results(results: dict, output_dir: Path):
 
     # 検証結果の表示
     summary = validation_results["summary"]
-    logger.info(f"\nValidation Summary:")
+    logger.info("\nValidation Summary:")
     logger.info(f"  Success rate: {summary['success_rate']:.1%}")
     logger.info(f"  Passed: {summary['passed']}/{summary['total']}")
     logger.info("")
@@ -403,13 +403,13 @@ def main():
         logger.info("✅ Baseline simulation completed successfully!")
         logger.info("=" * 60)
         logger.info(f"\nResults directory: {output_dir}")
-        logger.info(f"  - results.json: Full simulation results")
-        logger.info(f"  - summary.json: Summary statistics")
-        logger.info(f"  - simulation.log: Execution log")
+        logger.info("  - results.json: Full simulation results")
+        logger.info("  - summary.json: Summary statistics")
+        logger.info("  - simulation.log: Execution log")
         if args.validate:
-            logger.info(f"  - validation_report.json: Economic phenomena validation")
+            logger.info("  - validation_report.json: Economic phenomena validation")
         if args.visualize:
-            logger.info(f"  - visualizations/: All plots")
+            logger.info("  - visualizations/: All plots")
 
     except Exception as e:
         logger.exception(f"Error during simulation: {e}")

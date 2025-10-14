@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from src.agents.firm import FirmTemplateLoader
 from src.agents.household import HouseholdProfileGenerator
 from src.data.goods_types import GOODS
-from src.environment.geography import Building, BuildingType, CityMap
+from src.environment.geography import CityMap
 from src.environment.markets.financial_market import (
     DepositRequest,
     FinancialMarket,
@@ -30,7 +30,7 @@ from src.environment.markets.financial_market import (
 from src.environment.markets.goods_market import GoodListing, GoodOrder, GoodsMarket
 from src.environment.markets.labor_market import JobPosting, JobSeeker, LaborMarket
 from src.environment.simulation import Simulation
-from src.models.data_models import EmploymentStatus, FirmProfile
+from src.models.data_models import EmploymentStatus
 from src.utils.config import load_config
 
 
@@ -235,7 +235,7 @@ class TestMarketIntegration:
                 for firm in test_firms
             ]
 
-            transactions = goods_market.match(listings, orders)
+            _ = goods_market.match(listings, orders)
 
         # Step 3: Financial market
         loan_requests = [
@@ -514,7 +514,7 @@ class TestStatePersistence:
             assert len(sim2.state.firms) == num_firms_before
 
             # Verify household details
-            for h1, h2 in zip(sim1.state.households, sim2.state.households):
+            for h1, h2 in zip(sim1.state.households, sim2.state.households, strict=False):
                 assert h1.id == h2.id
                 assert h1.age == h2.age
                 assert abs(h1.cash - h2.cash) < 0.01  # Float comparison

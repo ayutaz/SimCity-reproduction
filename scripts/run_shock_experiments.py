@@ -32,7 +32,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from loguru import logger
 
-from experiments.validation import EconomicPhenomenaValidator
 from src.environment.simulation import Simulation
 from src.utils.config import load_config
 from src.utils.logger import setup_logger
@@ -102,7 +101,7 @@ def apply_price_shock(sim: Simulation, magnitude: float, good_id: str = "food_gr
     new_price = original_price * magnitude
     sim.goods_market.prices[good_id] = new_price
 
-    logger.warning(f"🚨 PRICE SHOCK APPLIED")
+    logger.warning("🚨 PRICE SHOCK APPLIED")
     logger.warning(f"  Good: {good_id}")
     logger.warning(f"  Original price: {original_price:.2f}")
     logger.warning(f"  New price: {new_price:.2f}")
@@ -125,18 +124,18 @@ def apply_policy_shock(
         new_ubi = original_ubi * magnitude
         sim.government.ubi_amount = new_ubi
 
-        logger.warning(f"🚨 POLICY SHOCK APPLIED (UBI)")
+        logger.warning("🚨 POLICY SHOCK APPLIED (UBI)")
         logger.warning(f"  Original UBI: {original_ubi:.2f}")
         logger.warning(f"  New UBI: {new_ubi:.2f}")
         logger.warning(f"  Magnitude: {magnitude:.2f}x")
 
     elif policy_type == "tax_rate":
         # 税率を調整（税率ブラケットの全体を調整）
-        original_brackets = sim.government.tax_brackets.copy()
+        _ = sim.government.tax_brackets.copy()  # 将来の実装用に保存（現在は未使用）
         for bracket in sim.government.tax_brackets:
             bracket["rate"] *= magnitude
 
-        logger.warning(f"🚨 POLICY SHOCK APPLIED (Tax Rate)")
+        logger.warning("🚨 POLICY SHOCK APPLIED (Tax Rate)")
         logger.warning(f"  Tax rates adjusted by: {magnitude:.2f}x")
 
 
@@ -155,7 +154,7 @@ def apply_population_shock(sim: Simulation, num_new_households: int):
     # sim.add_households(num_new_households)  # TODO: 実装が必要
     new_count = len(sim.households)
 
-    logger.warning(f"🚨 POPULATION SHOCK APPLIED")
+    logger.warning("🚨 POPULATION SHOCK APPLIED")
     logger.warning(f"  Original household count: {original_count}")
     logger.warning(f"  New households added: {num_new_households}")
     logger.warning(f"  New household count: {new_count}")
@@ -328,17 +327,17 @@ def analyze_shock_impact(history: dict, shock_step: int, output_dir: Path):
     inflation_change = (post_inflation - pre_inflation) * 100  # パーセントポイント
 
     logger.info(f"\nImpact Analysis (window: {window} steps before/after shock):")
-    logger.info(f"\nGDP:")
+    logger.info("\nGDP:")
     logger.info(f"  Before: {pre_gdp:,.2f}")
     logger.info(f"  After: {post_gdp:,.2f}")
     logger.info(f"  Change: {gdp_change:+.2f}%")
 
-    logger.info(f"\nUnemployment Rate:")
+    logger.info("\nUnemployment Rate:")
     logger.info(f"  Before: {pre_unemployment:.2%}")
     logger.info(f"  After: {post_unemployment:.2%}")
     logger.info(f"  Change: {unemployment_change:+.2f} pp")
 
-    logger.info(f"\nInflation Rate:")
+    logger.info("\nInflation Rate:")
     logger.info(f"  Before: {pre_inflation:.2%}")
     logger.info(f"  After: {post_inflation:.2%}")
     logger.info(f"  Change: {inflation_change:+.2f} pp")
@@ -483,10 +482,10 @@ def main():
         logger.info(f"✅ {args.experiment} experiment completed successfully!")
         logger.info("=" * 60)
         logger.info(f"\nResults directory: {output_dir}")
-        logger.info(f"  - results.json: Full experiment results")
-        logger.info(f"  - shock_impact_analysis.json: Impact analysis")
-        logger.info(f"  - shock_experiment_visualization.png: Visualization")
-        logger.info(f"  - experiment.log: Execution log")
+        logger.info("  - results.json: Full experiment results")
+        logger.info("  - shock_impact_analysis.json: Impact analysis")
+        logger.info("  - shock_experiment_visualization.png: Visualization")
+        logger.info("  - experiment.log: Execution log")
 
     except Exception as e:
         logger.exception(f"Error during experiment: {e}")
