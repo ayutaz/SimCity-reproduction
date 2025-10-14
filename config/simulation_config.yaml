@@ -14,7 +14,7 @@ agents:
     max: 200  # 最大世帯数
     monthly_inflow: 5  # Phase 1での月間流入数
   firms:
-    initial: 3  # 初期企業数
+    initial: 10  # 初期企業数（10世帯に対して十分な雇用を提供）
     max: 50  # 最大企業数
   government: 1
   central_bank: 1

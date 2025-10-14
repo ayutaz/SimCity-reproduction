@@ -149,16 +149,17 @@ def run_simulation(config, steps: int, output_dir: Path, checkpoint_interval: in
         history["government_spending"].append(metrics.get("government_spending", 0.0))
         history["tax_revenue"].append(metrics.get("tax_revenue", 0.0))
 
-        # 世帯所得と食料支出比率
+        # 世帯所得
         household_incomes = [
             getattr(h.profile, "monthly_income", 50000.0) for h in sim.households
         ]
-        food_ratios = [0.2 for _ in sim.households]  # 簡略化（将来実装予定）
         history["household_incomes"].append(household_incomes)
-        history["food_expenditure_ratios"].append(food_ratios)
 
-        # 価格と需要の追跡（将来実装予定）
-        # 現在のGoodsMarket実装では直接追跡できないため、スキップ
+        # 食料支出比率はsimulation内で計算・記録されるためスキップ
+        # （simulation.pyの_record_history()で自動的に記録される）
+
+        # 価格と需要の追跡もsimulation内で自動記録されるためスキップ
+        # （simulation.pyの_record_history()で自動的に記録される）
 
         step_time = time.time() - step_start_time
 
@@ -198,6 +199,12 @@ def run_simulation(config, steps: int, output_dir: Path, checkpoint_interval: in
 
     # 最終結果の保存
     logger.info("\nSaving results...")
+
+    # simulation.state.historyから食料支出比率と価格・需要データをマージ
+    history["food_expenditure_ratios"] = sim.state.history.get("food_expenditure_ratios", [])
+    history["prices"] = sim.state.history.get("prices", {})
+    history["demands"] = sim.state.history.get("demands", {})
+
     results = {
         "history": history,
         "metadata": {

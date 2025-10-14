@@ -536,16 +536,12 @@ class HouseholdProfileGenerator:
         wage_multiplier = calculate_wage_multiplier(skills)
         monthly_income = base_monthly_income * wage_multiplier
 
-        # 雇用状態（90%が雇用済み）
-        if random.random() < 0.9:
-            employment_status = EmploymentStatus.EMPLOYED
-            employer_id = random.randint(1, 50)  # 仮のemployer ID
-            wage = monthly_income
-        else:
-            employment_status = EmploymentStatus.UNEMPLOYED
-            employer_id = None
-            wage = 0.0
-            monthly_income = 0.0  # 失業中は収入なし
+        # 雇用状態（Phase 9.9.4修正: Enum使用に統一）
+        # 全員失業状態で開始し、労働市場でマッチング
+        employment_status = EmploymentStatus.UNEMPLOYED
+        employer_id = None
+        wage = 0.0
+        monthly_income = 0.0  # 失業中は収入なし（reservation_wage計算で最低希望賃金1000になる）
 
         # 消費嗜好（ランダム、合計が1になるように正規化）
         preferences = {}

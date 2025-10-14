@@ -262,9 +262,12 @@ Location: {self.profile.location}
             },
         }
 
-    def calculate_production_capacity(self) -> float:
+    def calculate_production_capacity(self, households: list["HouseholdAgent"]) -> float:
         """
         現在の生産能力を計算（Cobb-Douglas）
+
+        Args:
+            households: 全世帯エージェントのリスト
 
         Returns:
             生産能力（最大生産量）
@@ -274,8 +277,55 @@ Location: {self.profile.location}
             return 0.0
 
         # 効率的労働力（スキルマッチング考慮）
-        # 簡略版: 実際のスキルマッチングはPhase 3で実装
-        effective_labor = labor * 0.8  # 仮定: 平均80%の効率
+        # 従業員のスキルと企業のスキル要件を比較
+        skill_efficiencies = []
+
+        for employee_id in self.profile.employees:
+            # 従業員を探す
+            employee = None
+            for h in households:
+                if h.profile.id == employee_id:
+                    employee = h
+                    break
+
+            if employee is None:
+                # 従業員が見つからない場合は効率0.5を仮定
+                skill_efficiencies.append(0.5)
+                continue
+
+            # スキルマッチングを計算
+            if not self.profile.skill_requirements:
+                # スキル要件がない場合は100%効率
+                skill_efficiencies.append(1.0)
+            else:
+                # 各要求スキルについてマッチング度を計算
+                match_scores = []
+                for skill_name, required_level in self.profile.skill_requirements.items():
+                    employee_level = employee.profile.skills.get(skill_name, 0.0)
+
+                    if required_level > 0:
+                        # スキルレベル比率（上限1.0）
+                        match_ratio = min(employee_level / required_level, 1.0)
+                        match_scores.append(match_ratio)
+                    else:
+                        # 要求レベルが0の場合は100%
+                        match_scores.append(1.0)
+
+                # 平均マッチング度を効率とする
+                if match_scores:
+                    efficiency = sum(match_scores) / len(match_scores)
+                else:
+                    efficiency = 1.0
+
+                skill_efficiencies.append(efficiency)
+
+        # 全従業員の平均効率を計算
+        if skill_efficiencies:
+            avg_efficiency = sum(skill_efficiencies) / len(skill_efficiencies)
+        else:
+            avg_efficiency = 0.8  # フォールバック値
+
+        effective_labor = labor * avg_efficiency
 
         return self.production_function.calculate_output(
             labor=effective_labor,
