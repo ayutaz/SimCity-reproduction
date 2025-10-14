@@ -25,7 +25,9 @@
       "Bash(if not exist .githubworkflows mkdir .githubworkflows)",
       "Bash(if exist nul del nul)",
       "WebFetch(domain:github.com)",
-      "WebFetch(domain:api.github.com)"
+      "WebFetch(domain:api.github.com)",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)"
     ],
     "deny": [],
     "ask": []
