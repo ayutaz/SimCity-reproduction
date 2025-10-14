@@ -66,6 +66,29 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - 預貸率追跡
 - テスト: 17/17成功
 
+**Phase 4: 地理・可視化実装（完了）**
+- 地理システム（`src/environment/geography.py` 332行）
+  - 100×100グリッドベース都市マップ
+  - 建物管理（追加、削除、検索）
+  - 距離計算（ユークリッド、マンハッタン）
+- マップ可視化（`src/visualization/map_generator.py` 348行）
+  - 建物タイプマップ
+  - 占有率ヒートマップ
+  - 密度マップ
+  - 複合ビュー
+- 経済グラフ（`src/visualization/plots.py` 561行）
+  - フィリップス曲線
+  - オークンの法則
+  - ベバリッジ曲線
+  - エンゲルの法則
+  - 価格弾力性分析
+  - 分布ヒストグラム
+- Streamlitダッシュボード（`src/visualization/dashboard.py` 573行）
+  - インタラクティブWeb UI
+  - 4つのタブ（Overview, City Map, Economic Indicators, Analysis）
+  - リアルタイム可視化
+- テスト: 58/58成功
+
 **Phase 5: データ準備（部分完了 6/8）**
 - スキルデータ（`src/data/skill_types.py` 525行）
   - 58種類のスキル定義
@@ -77,33 +100,50 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - 必需品22、奢侈品22
 - 企業テンプレート（`src/data/firm_templates.json` 598行）
   - 44企業テンプレート
+- 世帯プロファイルジェネレータ（`src/agents/household.py`）
+  - Lognormal所得分布
+  - スキル・年齢・教育レベル生成
+- 初期データ生成スクリプト（`scripts/generate_initial_households.py`）
+  - 200世帯データセット生成
+- テスト: 14/14成功
+
+**Phase 6: 統合テスト・検証（部分完了 4/15）**
+- **Phase 6.2 統合テスト**: ✅ 完了（`tests/test_integration.py` 585行）
+  - 市場メカニズム統合テスト（5テスト）
+  - シミュレーション実行テスト（5テスト）
+  - 状態保存/復元テスト（4テスト）
+  - 地理システム統合テスト（2テスト）
+  - テスト結果: 15/15成功 ✅
 
 ### テスト結果
 
 ```
-全78テスト実行: 78/78成功 (100%)
+全165テスト実行: 165/165成功 (100%)
 - test_economic_models.py: 18テスト
 - test_financial_market.py: 5テスト
+- test_geography.py: 20テスト
 - test_goods_market.py: 4テスト
 - test_household_agent.py: 14テスト
 - test_labor_market.py: 8テスト
 - test_llm_integration.py: 2テスト
+- test_map_generator.py: 14テスト
 - test_phase2_agents.py: 27テスト
+- test_plots.py: 20テスト
+- test_dashboard.py: 4テスト
+- test_phase5_data.py: 14テスト (Phase 5データ生成)
+- test_integration.py: 15テスト (Phase 6.2統合テスト)
 
 コード品質: ruff All checks passed
 ```
 
 ### 未実装フェーズ
 
-**Phase 4: 地理・可視化実装**
-- Streamlitダッシュボード
-- 都市マップ可視化
-- グラフ生成
-
-**Phase 6: 統合テスト・検証**
-- 経済現象検証（7つの曲線）
-- ロバストネステスト
-- 外生ショック実験
+**Phase 6: 統合テスト・検証（部分完了: Phase 6.2完了、残り11タスク）**
+- ✅ Phase 6.2: 統合テスト（完了）
+- Phase 6.1: Unit Test補完（3タスク）
+- Phase 6.3: 経済現象検証（7つの曲線、7タスク）
+- Phase 6.4: ロバストネステスト（3タスク）
+- Phase 6.5: 外生ショック実験（1タスク）
 
 **Phase 7: 実験・最適化**
 - パフォーマンス最適化
@@ -234,15 +274,27 @@ SimCity/
 │   ├── utils/
 │   │   ├── config.py              # 設定管理 (285行)
 │   │   └── logger.py              # ログ管理 (114行)
-│   └── visualization/             # 未実装
-├── tests/                         # 78テスト、100%成功
+│   └── visualization/             # Phase 4完了
+│       ├── geography.py           # 地理システム (332行)
+│       ├── map_generator.py       # マップ可視化 (348行)
+│       ├── plots.py               # 経済グラフ (561行)
+│       └── dashboard.py           # Streamlitダッシュボード (573行)
+├── scripts/                       # Phase 5スクリプト
+│   └── generate_initial_households.py  # 初期世帯データ生成 (154行)
+├── tests/                         # 165テスト、100%成功
+│   ├── test_dashboard.py          # 4テスト
 │   ├── test_economic_models.py    # 18テスト
 │   ├── test_financial_market.py   # 5テスト
+│   ├── test_geography.py          # 20テスト
 │   ├── test_goods_market.py       # 4テスト
 │   ├── test_household_agent.py    # 14テスト
 │   ├── test_labor_market.py       # 8テスト
 │   ├── test_llm_integration.py    # 2テスト
-│   └── test_phase2_agents.py      # 27テスト
+│   ├── test_map_generator.py      # 14テスト
+│   ├── test_phase2_agents.py      # 27テスト
+│   ├── test_plots.py              # 20テスト
+│   ├── test_phase5_data.py        # 14テスト (Phase 5)
+│   └── test_integration.py        # 15テスト (Phase 6.2)
 ├── config/
 │   ├── simulation_config.yaml     # シミュレーション設定
 │   └── llm_config.yaml            # LLM設定
@@ -253,7 +305,7 @@ SimCity/
 ├── LICENSE                        # Apache 2.0
 ├── README.md
 ├── CLAUDE.md                      # 本ファイル
-└── TASKS.md                       # 進捗管理（81/134完了、60%）
+└── TASKS.md                       # 進捗管理（108/134完了、81%）
 ```
 
 ## 主要技術スタック
@@ -266,9 +318,9 @@ SimCity/
 - **ロギング**: `loguru` (0.7.3)
 - **コード品質**: `ruff` (0.9.1)
 - **テスト**: `pytest` (8.4.2), `pytest-cov` (7.0.0)
+- **可視化**: `streamlit`, `matplotlib`
 
 ### 未実装ライブラリ
-- **可視化**: `streamlit`, `plotly`, `matplotlib`
 - **分析**: `statsmodels`（経済指標の相関分析）
 
 ## 重要な実装の詳細
@@ -510,16 +562,23 @@ class CustomMarket:
 
 ## 次のステップ推奨
 
-### オプション1: Phase 4 - Streamlitダッシュボード
-- マクロ経済指標の可視化
-- 市場データのリアルタイム表示
-- 都市マップの実装
+### オプション1: Phase 6 - 統合テスト・経済現象検証
+- シミュレーション全体の統合テスト
+- 7つの経済現象の検証
+  - Phillips Curve（フィリップス曲線）
+  - Okun's Law（オークンの法則）
+  - Beveridge Curve（ベバリッジ曲線）
+  - Price Elasticity（価格弾力性）
+  - Engel's Law（エンゲルの法則）
+  - Investment Volatility（投資のボラティリティ）
+  - Price Stickiness（価格の粘着性）
 
 ### オプション2: Phase 5.4 - 世帯プロファイル生成完了
 - 200世帯の初期データ生成
 - 年齢・スキル分布の実装
+- 初期資産配分
 
-### オプション3: Phase 6 - 統合テスト・経済現象検証
-- Phillips Curve検証
-- Okun's Law検証
-- その他5つの経済現象検証
+### オプション3: Phase 7 - 実験と最適化
+- パフォーマンス最適化
+- LLMコスト削減
+- 並列処理の実装

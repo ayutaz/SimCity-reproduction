@@ -26,7 +26,7 @@ LLMを活用したマクロ経済シミュレーションフレームワーク�
 - **Python**: 3.12
 - **パッケージ管理**: uv
 - **LLM**: OpenAI gpt-4o-mini
-- **可視化**: Streamlit + Plotly（予定）
+- **可視化**: Streamlit + Matplotlib
 - **データ処理**: NumPy, Pandas, SciPy
 - **設定管理**: YAML, Pydantic, python-dotenv
 - **コード品質**: ruff (linter + formatter)
@@ -77,10 +77,25 @@ OPENAI_API_KEY=your_actual_api_key_here
 
 ## クイックスタート
 
+### ダッシュボードの起動
+
+```bash
+# Streamlitダッシュボードを起動
+uv run streamlit run app.py
+
+# ブラウザが自動で開き、http://localhost:8501 でアクセス可能
+```
+
+ダッシュボードには以下の機能があります：
+- **Overview**: シミュレーション概要とシステム統計
+- **City Map**: 都市マップの可視化（建物タイプ、占有率、密度）
+- **Economic Indicators**: 経済指標の時系列グラフ
+- **Analysis**: 経済現象の分析（フィリップス曲線、オークンの法則等）
+
 ### テストの実行
 
 ```bash
-# 全テストの実行（78テスト）
+# 全テストの実行（165テスト）
 uv run pytest
 
 # カバレッジ付き
@@ -131,23 +146,32 @@ SimCity/
 │   ├── models/              # 経済モデル（Phase 1完了）
 │   │   ├── data_models.py          # データモデル (361行)
 │   │   └── economic_models.py      # 経済モデル (471行)
-│   ├── data/                # データ定義（Phase 5部分完了）
-│   │   ├── skill_types.py          # 58種類のスキル定義 (525行)
-│   │   ├── goods_types.py          # 44種類の財定義 (528行)
-│   │   └── firm_templates.json     # 44企業テンプレート (598行)
+│   ├── data/                # データ定義（Phase 5完了）
+│   │   ├── skill_types.py          # 58種類のスキル定義 (410行)
+│   │   ├── goods_types.py          # 44種類の財定義 (342行)
+│   │   └── firm_templates/         # 44企業テンプレート (44ファイル)
 │   ├── utils/               # ユーティリティ
 │   │   ├── config.py               # 設定管理 (285行)
 │   │   └── logger.py               # ロガー (114行)
-│   └── visualization/       # 可視化（Phase 4未実装）
-│       └── (未実装)
-├── tests/                   # テスト（78テスト、100%成功）
-│   ├── test_economic_models.py     # 18テスト
-│   ├── test_financial_market.py    # 5テスト
-│   ├── test_goods_market.py        # 4テスト
-│   ├── test_household_agent.py     # 14テスト
-│   ├── test_labor_market.py        # 8テスト
-│   ├── test_llm_integration.py     # 2テスト
-│   └── test_phase2_agents.py       # 27テスト
+│   └── visualization/       # 可視化（Phase 4完了）
+│       ├── geography.py             # 地理システム (332行)
+│       ├── map_generator.py         # マップ可視化 (348行)
+│       ├── plots.py                 # 経済グラフ生成 (561行)
+│       └── dashboard.py             # Streamlitダッシュボード (573行)
+├── tests/                   # テスト（165テスト、100%成功）
+│   ├── test_dashboard.py            # 4テスト
+│   ├── test_economic_models.py      # 18テスト
+│   ├── test_financial_market.py     # 5テスト
+│   ├── test_geography.py            # 20テスト
+│   ├── test_goods_market.py         # 4テスト
+│   ├── test_household_agent.py      # 14テスト
+│   ├── test_integration.py          # 15テスト（Phase 6.2新規）
+│   ├── test_labor_market.py         # 8テスト
+│   ├── test_llm_integration.py      # 2テスト
+│   ├── test_map_generator.py        # 14テスト
+│   ├── test_phase2_agents.py        # 27テスト
+│   ├── test_phase5_data.py          # 14テスト
+│   └── test_plots.py                # 20テスト
 ├── config/                 # 設定ファイル
 │   ├── simulation_config.yaml      # シミュレーション設定
 │   └── llm_config.yaml             # LLM設定
@@ -188,19 +212,32 @@ SimCity/
 - **FinancialMarket**: 預金・貸出システム、政策金利+スプレッド方式
 - **テスト**: 17/17テスト成功
 
-### Phase 5: データ準備（部分完了 6/8）
+### Phase 4: 地理・可視化実装（完了）
+- **地理システム (geography.py)**: 100×100グリッドベース都市マップ、建物管理、距離計算
+- **マップ可視化 (map_generator.py)**: 建物タイプマップ、占有率ヒートマップ、密度マップ、複合ビュー
+- **経済グラフ (plots.py)**: フィリップス曲線、オークンの法則、ベバリッジ曲線、エンゲルの法則、価格弾力性、分布分析
+- **Streamlitダッシュボード (dashboard.py)**: インタラクティブWeb UI、リアルタイム可視化
+- **テスト**: 58/58テスト成功（geography 20 + map_generator 14 + plots 20 + dashboard 4）
+
+### Phase 5: データ準備（完了）
 - **スキルデータ**: 58種類定義完了（10カテゴリ）
 - **財データ**: 44種類定義完了（10カテゴリ、必需品22+奢侈品22）
 - **企業テンプレート**: 44種類のJSONテンプレート完了
+- **世帯プロファイル生成**: HouseholdProfileGenerator完全実装（Lognormal分布、正規分布年齢、教育レベル別スキル割り当て）
+- **初期データセット**: 200世帯データ生成スクリプト + JSONデータ（224.8 KB）
+- **テスト**: 14/14テスト成功
 
-### Phase 4: 地理・可視化実装（未実装）
-- Streamlitダッシュボード
-- 都市マップ可視化
-- グラフ生成
+### Phase 6: 統合テスト・検証（部分完了: 4/15タスク）
+- **Phase 6.2 統合テスト**: ✅ 完了（15テスト、100%成功）
+  - 市場メカニズム統合テスト
+  - シミュレーション実行テスト（12ステップ）
+  - 状態保存/復元テスト
+  - 地理システム統合テスト
+- **Phase 6.1 単体テスト補完**: 待機
+- **Phase 6.3 経済現象検証**: 待機（7つの経済法則）
+- **Phase 6.4 ロバストネステスト**: 待機
 
-### Phase 6-8: 統合テスト・検証・配布（未実装）
-- 経済現象検証（7つの曲線）
-- ロバストネステスト
+### Phase 7-8: 実験・最適化・配布（未実装）
 - 外生ショック実験
 - パフォーマンス最適化
 - ドキュメント整備
@@ -208,10 +245,13 @@ SimCity/
 ## テスト結果
 
 ```bash
-全78テスト実行: 78/78成功 (100%)
+全165テスト実行: 165/165成功 (100%)
 - Phase 1: 20テスト (経済モデル18 + LLM統合2)
 - Phase 2: 41テスト (世帯14 + 全エージェント27)
 - Phase 3: 17テスト (労働市場8 + 財市場4 + 金融市場5)
+- Phase 4: 58テスト (地理20 + マップ14 + グラフ20 + ダッシュボード4)
+- Phase 5: 14テスト (データ生成・検証)
+- Phase 6: 15テスト (統合テスト・Phase 6.2)
 
 コード品質: ruff All checks passed
 ```
@@ -303,7 +343,7 @@ uv run ruff check --fix src/ tests/
 ## ドキュメント
 
 - [CLAUDE.md](CLAUDE.md) - アーキテクチャと実装ガイド
-- [TASKS.md](TASKS.md) - 詳細なタスク管理・進捗追跡（81/134タスク完了）
+- [TASKS.md](TASKS.md) - 詳細なタスク管理・進捗追跡（108/134タスク完了、81%）
 - [2510.01297v1.md](2510.01297v1.md) - 元論文（マークダウン版）
 
 ## ロードマップ
@@ -312,13 +352,13 @@ uv run ruff check --fix src/ tests/
 - [x] **Phase 1**: LLM統合とコア基盤（完了）
 - [x] **Phase 2**: エージェント実装（完了）
 - [x] **Phase 3**: 市場メカニズム（完了）
-- [ ] **Phase 4**: 地理と可視化（待機）
-- [ ] **Phase 5**: データ準備（6/8完了）
-- [ ] **Phase 6**: 統合テストとバリデーション（待機）
+- [x] **Phase 4**: 地理と可視化（完了）
+- [x] **Phase 5**: データ準備（完了）
+- [ ] **Phase 6**: 統合テストとバリデーション（部分完了: Phase 6.2のみ）
 - [ ] **Phase 7**: 実験と最適化（待機）
 - [ ] **Phase 8**: 配布準備（待機）
 
-**現在の進捗**: 81/134タスク完了 (60%)
+**現在の進捗**: Phase 0-5 完了 + Phase 6.2 完了（108/134タスク、81%）
 
 詳細は [TASKS.md](TASKS.md) を参照してください。
 
@@ -328,7 +368,6 @@ uv run ruff check --fix src/ tests/
 2. **複雑な金融活動の欠如**: 債券、株式、デリバティブは未実装
 3. **計算コスト**: 大規模シミュレーション（世帯数 > 500）は高コスト
 4. **実世界との乖離**: キャリブレーションされていない学術的シミュレーション
-5. **可視化未実装**: Phase 4待機中
 
 ## ライセンス
 
