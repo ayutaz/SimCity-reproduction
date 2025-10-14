@@ -12,6 +12,7 @@ import os
 import sys
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -261,31 +262,33 @@ class TestSimulationExecution:
     @pytest.fixture
     def simulation_with_data(self, config):
         """Create simulation with initial data"""
-        sim = Simulation(config)
+        # Mock environment variable for test
+        with patch.dict(os.environ, {"OPENAI_API_KEY": "test_api_key_for_testing"}):
+            sim = Simulation(config)
 
-        # Add test households
-        generator = HouseholdProfileGenerator(random_seed=789)
-        households = generator.generate(count=20)
-        sim.state.households = households
+            # Add test households
+            generator = HouseholdProfileGenerator(random_seed=789)
+            households = generator.generate(count=20)
+            sim.state.households = households
 
-        # Add test firms
-        loader = FirmTemplateLoader()
-        templates = loader.load_templates()
-        firms = []
+            # Add test firms
+            loader = FirmTemplateLoader()
+            templates = loader.load_templates()
+            firms = []
 
-        for i in range(min(5, len(templates))):
-            firm_type = list(templates.keys())[i]
-            template = templates[firm_type]
-            firm = FirmTemplateLoader.create_firm_profile(
-                firm_id=str(i + 1),
-                template=template,
-                location=(50 + i * 5, 50),
-            )
-            firms.append(firm)
+            for i in range(min(5, len(templates))):
+                firm_type = list(templates.keys())[i]
+                template = templates[firm_type]
+                firm = FirmTemplateLoader.create_firm_profile(
+                    firm_id=str(i + 1),
+                    template=template,
+                    location=(50 + i * 5, 50),
+                )
+                firms.append(firm)
 
-        sim.state.firms = firms
+            sim.state.firms = firms
 
-        return sim
+            return sim
 
     def test_single_step_execution(self, simulation_with_data):
         """Test single simulation step execution"""
@@ -392,30 +395,32 @@ class TestStatePersistence:
     @pytest.fixture
     def simulation_with_data(self, config):
         """Create simulation with data"""
-        sim = Simulation(config)
+        # Mock environment variable for test
+        with patch.dict(os.environ, {"OPENAI_API_KEY": "test_api_key_for_testing"}):
+            sim = Simulation(config)
 
-        # Add households
-        generator = HouseholdProfileGenerator(random_seed=999)
-        sim.state.households = generator.generate(count=10)
+            # Add households
+            generator = HouseholdProfileGenerator(random_seed=999)
+            sim.state.households = generator.generate(count=10)
 
-        # Add firms
-        loader = FirmTemplateLoader()
-        templates = loader.load_templates()
-        firms = []
+            # Add firms
+            loader = FirmTemplateLoader()
+            templates = loader.load_templates()
+            firms = []
 
-        for i in range(min(3, len(templates))):
-            firm_type = list(templates.keys())[i]
-            template = templates[firm_type]
-            firm = FirmTemplateLoader.create_firm_profile(
-                firm_id=str(i + 1),
-                template=template,
-                location=(50, 50),
-            )
-            firms.append(firm)
+            for i in range(min(3, len(templates))):
+                firm_type = list(templates.keys())[i]
+                template = templates[firm_type]
+                firm = FirmTemplateLoader.create_firm_profile(
+                    firm_id=str(i + 1),
+                    template=template,
+                    location=(50, 50),
+                )
+                firms.append(firm)
 
-        sim.state.firms = firms
+            sim.state.firms = firms
 
-        return sim
+            return sim
 
     def test_save_state(self, simulation_with_data):
         """Test saving simulation state"""
@@ -464,7 +469,8 @@ class TestStatePersistence:
             sim1.save_state(temp_path)
 
             # Create new simulation and load
-            sim2 = Simulation(config)
+            with patch.dict(os.environ, {"OPENAI_API_KEY": "test_api_key_for_testing"}):
+                sim2 = Simulation(config)
             sim2.load_state(temp_path)
 
             # Verify state restored
@@ -496,7 +502,8 @@ class TestStatePersistence:
             # Save and load
             sim1.save_state(temp_path)
 
-            sim2 = Simulation(config)
+            with patch.dict(os.environ, {"OPENAI_API_KEY": "test_api_key_for_testing"}):
+                sim2 = Simulation(config)
             sim2.load_state(temp_path)
 
             # Verify exact match
@@ -529,7 +536,8 @@ class TestStatePersistence:
             sim1.save_state(temp_path)
 
             # Load and continue
-            sim2 = Simulation(config)
+            with patch.dict(os.environ, {"OPENAI_API_KEY": "test_api_key_for_testing"}):
+                sim2 = Simulation(config)
             sim2.load_state(temp_path)
 
             # Continue simulation

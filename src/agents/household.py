@@ -92,18 +92,35 @@ class HouseholdAgent(BaseAgent):
         self.consumption = getattr(profile, "cash", 50000.0) * 0.1  # 10%を消費
         self.food_expenditure = self.consumption * 0.3  # 消費の30%を食料
 
-        # 属性として保存
+        # 属性として保存（enum or string対応）
+        education_value = (
+            profile.education_level.value
+            if hasattr(profile.education_level, "value")
+            else profile.education_level
+        )
+        employment_value = (
+            profile.employment_status.value
+            if hasattr(profile.employment_status, "value")
+            else profile.employment_status
+        )
+
         self.attributes = {
             "profile_id": profile.id,
             "age": profile.age,
-            "education": profile.education_level.value,
-            "employment_status": profile.employment_status.value,
+            "education": education_value,
+            "employment_status": employment_value,
         }
 
         logger.info(
             f"HouseholdAgent created: id={profile.id}, "
-            f"age={profile.age}, education={profile.education_level.value}"
+            f"age={profile.age}, education={education_value}"
         )
+
+    def _get_enum_value(self, field):
+        """Helper to safely get enum value (handles both enum and string)"""
+        if isinstance(field, str):
+            return field
+        return field.value if hasattr(field, "value") else str(field)
 
     def get_profile_str(self) -> str:
         """
@@ -120,8 +137,13 @@ class HouseholdAgent(BaseAgent):
             skills_str = "None"
 
         # 雇用状態
-        employment_str = self.profile.employment_status.value
-        if self.profile.employment_status == EmploymentStatus.EMPLOYED:
+        employment_str = self._get_enum_value(self.profile.employment_status)
+        employment_status_enum = (
+            EmploymentStatus(self.profile.employment_status)
+            if isinstance(self.profile.employment_status, str)
+            else self.profile.employment_status
+        )
+        if employment_status_enum == EmploymentStatus.EMPLOYED:
             employment_str += f" (wage: ${self.profile.wage:.2f}/month)"
 
         # 予算計算
@@ -131,7 +153,7 @@ class HouseholdAgent(BaseAgent):
         profile = f"""
 Name: {self.profile.name}
 Age: {self.profile.age}
-Education: {self.profile.education_level.value}
+Education: {self._get_enum_value(self.profile.education_level)}
 Skills: {skills_str}
 
 Financial Status:
@@ -310,7 +332,12 @@ Consumption Preferences:
             デフォルトの行動（最も安全な選択）
         """
         # 雇用状態に応じてフォールバック
-        if self.profile.employment_status == EmploymentStatus.UNEMPLOYED:
+        employment_status = (
+            EmploymentStatus(self.profile.employment_status)
+            if isinstance(self.profile.employment_status, str)
+            else self.profile.employment_status
+        )
+        if employment_status == EmploymentStatus.UNEMPLOYED:
             return {
                 "function_name": "labor_action",
                 "arguments": {
@@ -359,7 +386,7 @@ Consumption Preferences:
         if "age" in updates:
             self.attributes["age"] = updates["age"]
         if "employment_status" in updates:
-            self.attributes["employment_status"] = updates["employment_status"].value
+            self.attributes["employment_status"] = self._get_enum_value(updates["employment_status"])
 
     def heuristic_savings_decision(self, current_step: int) -> dict[str, Any]:
         """

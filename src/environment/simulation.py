@@ -105,20 +105,21 @@ class Simulation:
         if household_data_file.exists():
             # データファイルから読み込み
             with open(household_data_file, encoding="utf-8") as f:
-                household_profiles = json.load(f)
+                household_data = json.load(f)
+                household_profiles = household_data.get("households", [])
 
             self.households = [
                 HouseholdAgent(
-                    household_id=profile["household_id"],
+                    household_id=profile["id"],
                     profile=HouseholdProfile(**profile),
                     llm_interface=self.llm_interface,
                 )
-                for profile in household_profiles[:self.config.agents.households.initial_count]
+                for profile in household_profiles[:self.config.agents.households.initial]
             ]
         else:
             # プロファイルを生成
             generator = HouseholdProfileGenerator(random_seed=self.config.simulation.random_seed)
-            profiles = generator.generate(count=self.config.agents.households.initial_count)
+            profiles = generator.generate(count=self.config.agents.households.initial)
 
             self.households = [
                 HouseholdAgent(
@@ -134,16 +135,20 @@ class Simulation:
         # TODO: 企業テンプレートから企業を生成
 
         # 政府エージェントの初期化
+        # 税率区分をdict形式からtuple形式に変換
+        tax_brackets = [
+            (bracket["threshold"], bracket["rate"])
+            for bracket in self.config.economy.taxation.income_tax_brackets
+        ]
         gov_state = GovernmentState(
-            income_tax_brackets=self.config.economy.taxation.income_tax_brackets,
+            income_tax_brackets=tax_brackets,
             vat_rate=self.config.economy.taxation.vat_rate,
             ubi_enabled=self.config.economy.welfare.ubi_enabled,
             ubi_amount=self.config.economy.welfare.ubi_amount,
             unemployment_benefit_rate=self.config.economy.welfare.unemployment_benefit_rate,
         )
         self.government = GovernmentAgent(
-            agent_id="government",
-            initial_state=gov_state,
+            state=gov_state,
             llm_interface=self.llm_interface,
         )
 
@@ -157,8 +162,7 @@ class Simulation:
             taylor_beta=self.config.economy.financial.taylor_rule.output_coefficient,
         )
         self.central_bank = CentralBankAgent(
-            agent_id="central_bank",
-            initial_state=cb_state,
+            state=cb_state,
             llm_interface=self.llm_interface,
         )
 
