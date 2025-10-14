@@ -54,24 +54,34 @@ class FinancialMarket:
         policy_rate: float = 0.02,
         deposit_spread: float = -0.01,
         loan_spread: float = 0.02,
+        max_loan_amount: float = 1_000_000.0,
+        loan_to_deposit_ratio: float = 0.9,
     ):
         """
         Args:
             policy_rate: 政策金利
             deposit_spread: 預金金利スプレッド（負の値）
             loan_spread: 貸出金利スプレッド（正の値）
+            max_loan_amount: 1回あたりの最大貸出額
+            loan_to_deposit_ratio: 預貸率上限（総貸出/総預金）
         """
         self.policy_rate = policy_rate
         self.deposit_spread = deposit_spread
         self.loan_spread = loan_spread
+        self.max_loan_amount = max_loan_amount
+        self.loan_to_deposit_ratio_limit = loan_to_deposit_ratio
 
         # 統計情報
         self.total_deposits = 0.0
         self.total_loans = 0.0
         self.deposit_count = 0
         self.loan_count = 0
+        self.rejected_loans = 0
 
-        logger.info(f"FinancialMarket initialized: policy_rate={policy_rate:.2%}")
+        logger.info(
+            f"FinancialMarket initialized: policy_rate={policy_rate:.2%}, "
+            f"max_loan={max_loan_amount:,.0f}, LTD_limit={loan_to_deposit_ratio:.1%}"
+        )
 
     def get_deposit_rate(self) -> float:
         """預金金利を取得"""
@@ -117,33 +127,64 @@ class FinancialMarket:
 
     def process_loans(self, requests: list[LoanRequest]) -> list[FinancialTransaction]:
         """
-        貸出を処理
+        貸出を処理（Phase 9.10.1: 審査ロジック追加）
+
+        審査基準:
+        1. 貸出額上限チェック（max_loan_amount以下）
+        2. 預貸率チェック（総貸出/総預金 ≤ loan_to_deposit_ratio_limit）
 
         Args:
             requests: 貸出申請リスト
 
         Returns:
-            取引結果リスト
+            取引結果リスト（承認された貸出のみ）
         """
         transactions = []
         loan_rate = self.get_loan_rate()
+        rejected_count = 0
 
         for req in requests:
-            if req.amount > 0:
-                # 簡略化: 全ての貸出申請を承認
-                transaction = FinancialTransaction(
-                    agent_id=req.firm_id,
-                    transaction_type="loan",
-                    amount=req.amount,
-                    interest_rate=loan_rate,
+            if req.amount <= 0:
+                continue
+
+            # 審査1: 貸出額上限チェック
+            if req.amount > self.max_loan_amount:
+                logger.debug(
+                    f"Loan rejected (amount too large): firm={req.firm_id}, "
+                    f"amount=${req.amount:,.0f} > limit=${self.max_loan_amount:,.0f}"
                 )
-                transactions.append(transaction)
-                self.total_loans += req.amount
-                self.loan_count += 1
+                rejected_count += 1
+                self.rejected_loans += 1
+                continue
+
+            # 審査2: 預貸率チェック
+            if self.total_deposits > 0:
+                new_total_loans = self.total_loans + req.amount
+                new_ltd_ratio = new_total_loans / self.total_deposits
+
+                if new_ltd_ratio > self.loan_to_deposit_ratio_limit:
+                    logger.debug(
+                        f"Loan rejected (LTD too high): firm={req.firm_id}, "
+                        f"new_LTD={new_ltd_ratio:.2%} > limit={self.loan_to_deposit_ratio_limit:.2%}"
+                    )
+                    rejected_count += 1
+                    self.rejected_loans += 1
+                    continue
+
+            # 承認: 貸出実行
+            transaction = FinancialTransaction(
+                agent_id=req.firm_id,
+                transaction_type="loan",
+                amount=req.amount,
+                interest_rate=loan_rate,
+            )
+            transactions.append(transaction)
+            self.total_loans += req.amount
+            self.loan_count += 1
 
         logger.info(
-            f"Processed {len(transactions)} loans, "
-            f"total amount: ${sum(t.amount for t in transactions):.2f}"
+            f"Processed {len(transactions)} loans (${sum(t.amount for t in transactions):.2f}), "
+            f"rejected {rejected_count}"
         )
 
         return transactions
@@ -163,6 +204,7 @@ class FinancialMarket:
             "total_loans": self.total_loans,
             "deposit_count": self.deposit_count,
             "loan_count": self.loan_count,
+            "rejected_loans": self.rejected_loans,
             "loan_to_deposit_ratio": (
                 self.total_loans / self.total_deposits
                 if self.total_deposits > 0
@@ -176,3 +218,4 @@ class FinancialMarket:
         self.total_loans = 0.0
         self.deposit_count = 0
         self.loan_count = 0
+        self.rejected_loans = 0

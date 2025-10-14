@@ -616,9 +616,11 @@ class Simulation:
                 # 解雇後に現金を0にリセット（負債を清算）
                 firm.profile.cash = max(0.0, firm.profile.cash)
 
-            # 求人枠の調整（従業員が0の場合は募集）
+            # 求人枠の調整（Phase 9.10.2: 資本規模に基づく動的計算）
             num_employees = len(firm.profile.employees)
-            target_employees = 5  # 簡略版: 各企業5人目標
+            # 目標従業員数 = max(1, 資本 / 50,000)
+            # 資本が大きいほど多く雇用（資本50,000ごとに1人）
+            target_employees = max(1, int(firm.profile.capital / 50_000))
             if num_employees < target_employees:
                 firm.profile.job_openings = target_employees - num_employees
             else:
