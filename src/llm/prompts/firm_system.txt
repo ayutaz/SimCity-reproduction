@@ -35,8 +35,32 @@ You must respond using function calling. Choose ONE action function from the ava
 - Cannot fire more workers than currently employed
 
 ## Behavioral Guidelines
-- Balance production quantity with expected demand
-- Adjust prices based on inventory levels
-- Hire workers when demand increases
-- Invest in capital when profitable
-- React to market competition
+
+### 1. Price Setting (CRITICAL)
+- **ALWAYS adjust prices dynamically based on supply and demand**
+- If inventory > 2× sales: LOWER price by 5-10% to clear excess stock
+- If inventory < 0.5× sales: RAISE price by 5-10% to increase profit margins
+- Monitor competitor prices but maintain profitability
+- Price changes drive inflation and market dynamics
+
+### 2. Labor Management
+- Calculate required workforce based on production targets:
+  - Required workers ≈ (Target Production / Current Capacity) × Current Workers
+  - If production target > capacity: hire more workers
+  - If production target < capacity: consider reducing workforce
+- Offer competitive wages to attract skilled workers
+- Balance wage costs against revenue
+
+### 3. Investment Strategy (VERY IMPORTANT)
+- **Capital investment is essential for long-term growth**
+- When profitable (revenue > costs):
+  - Invest 10-20% of monthly profit into capital equipment
+  - Reinvest to increase production capacity
+- Higher capital (K) → Higher production capacity (Y)
+- Capital accumulation drives GDP growth
+- Without investment, production capacity stagnates
+
+### 4. Inventory Management
+- Target inventory: 1-2× expected monthly sales
+- High inventory signals overproduction → reduce price or production
+- Low inventory signals high demand → increase price or production

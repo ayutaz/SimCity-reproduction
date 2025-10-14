@@ -63,13 +63,13 @@ class Simulation:
         self.state.phase = "move_in"
 
         # LLMインターフェースの初期化（環境変数から直接取得）
-        llm_config = {
-            "api_key": get_api_key("OPENAI_API_KEY"),
-            "model": "gpt-4o-mini",
-            "temperature": 0.7,
-            "max_tokens": 2000,
-        }
-        self.llm_interface = LLMInterface(llm_config)
+        api_key = get_api_key("OPENAI_API_KEY")
+        self.llm_interface = LLMInterface(
+            api_key=api_key,
+            model="gpt-4o-mini",
+            temperature=0.7,
+            max_tokens=2000,
+        )
 
         # エージェントの初期化
         self._initialize_agents()
@@ -508,7 +508,7 @@ class Simulation:
                 unemployment_expenditure += benefit
                 household.profile.monthly_income += benefit
 
-        # 6. 企業配当（純利益の10%）
+        # 6. 企業配当（純利益の10%）を世帯に直接配分
         total_dividends = 0.0
         for firm in self.firms:
             # 純利益 = 売上 - コスト（賃金）
@@ -528,10 +528,14 @@ class Simulation:
                 firm.profile.cash -= dividend
                 total_dividends += dividend
 
-        # 7. 政府支出を更新
-        self.government.state.expenditure = (
-            ubi_expenditure + unemployment_expenditure + total_dividends
-        )
+        # 配当を全世帯に均等配分（株主として）
+        if total_dividends > 0 and self.households:
+            dividend_per_household = total_dividends / len(self.households)
+            for household in self.households:
+                household.profile.cash += dividend_per_household
+
+        # 7. 政府支出を更新（配当は含めない）
+        self.government.state.expenditure = ubi_expenditure + unemployment_expenditure
 
         # 8. 政府準備金を更新
         budget_balance = (
@@ -583,67 +587,68 @@ class Simulation:
 
     def _revision_stage(self):
         """
-        Stage 4: 意思決定ステージ
+        Stage 4: 意思決定ステージ（LLM版）
 
-        エージェントが意思決定を行う（簡略版: LLMなし）
+        エージェントがLLMを使用して意思決定を行う
         """
-        logger.debug("Revision Stage (simplified)")
+        logger.info("Revision Stage: LLM-based decision making")
 
-        # 1. 企業: 価格調整と解雇処理（Phase 9.9.3）
-        total_layoffs = 0
-        for firm in self.firms:
-            # 価格を±5%でランダム調整
-            adjustment = random.uniform(-0.05, 0.05)
-            firm.profile.price *= 1 + adjustment
-            firm.profile.price = max(1.0, firm.profile.price)  # 最低価格1.0
+        # 1. 世帯エージェントの意思決定（全世帯）
+        logger.debug(f"Processing {len(self.households)} household decisions...")
+        for i, household in enumerate(self.households):
+            # 観察情報を構築
+            observation = self._build_household_observation(household)
 
-            # 解雇処理: 現金不足の場合に従業員を解雇
-            if firm.profile.cash < 0 and firm.profile.employees:
-                # 解雇数 = 現金不足額を賃金でカバーできる人数（最低1人）
-                layoff_count = min(
-                    len(firm.profile.employees),
-                    int(abs(firm.profile.cash) / firm.profile.wage_offered) + 1,
-                )
+            # LLMで意思決定（Phase 10.2: 決定頻度管理は将来実装）
+            try:
+                decision = household.decide_action(observation, self.state.step)
+                # 決定を実行
+                self._execute_household_decision(household, decision)
+            except Exception as e:
+                logger.warning(f"Household {household.profile.id} decision failed: {e}")
 
-                for _ in range(layoff_count):
-                    if firm.profile.employees:
-                        employee_id = firm.profile.employees.pop()
-                        total_layoffs += 1
+        logger.info(f"Completed {len(self.households)} household decisions")
 
-                        # 世帯の雇用状態を失業に変更（Phase 9.9.4: Enum使用に修正）
-                        for household in self.households:
-                            if household.profile.id == employee_id:
-                                from src.models.data_models import EmploymentStatus
+        # 2. 企業エージェントの意思決定（全企業）
+        logger.debug(f"Processing {len(self.firms)} firm decisions...")
+        for i, firm in enumerate(self.firms):
+            # 観察情報を構築
+            observation = self._build_firm_observation(firm)
 
-                                household.profile.employment_status = (
-                                    EmploymentStatus.UNEMPLOYED
-                                )
-                                household.profile.employer_id = None
-                                household.profile.monthly_income = (
-                                    0.0  # Phase 9.9.2修正を維持
-                                )
-                                household.profile.wage = 0.0
-                                break
+            # LLMで意思決定
+            try:
+                decision = firm.decide_action(observation, self.state.step)
+                # 決定を実行
+                self._execute_firm_decision(firm, decision)
+            except Exception as e:
+                logger.warning(f"Firm {firm.profile.id} decision failed: {e}")
 
-                # 解雇後に現金を0にリセット（負債を清算）
-                firm.profile.cash = max(0.0, firm.profile.cash)
+        logger.info(f"Completed {len(self.firms)} firm decisions")
 
-            # 求人枠の調整（Phase 9.10.2: 資本規模に基づく動的計算）
-            num_employees = len(firm.profile.employees)
-            # 目標従業員数 = max(1, 資本 / 50,000)
-            # 資本が大きいほど多く雇用（資本50,000ごとに1人）
-            target_employees = max(1, int(firm.profile.capital / 50_000))
-            if num_employees < target_employees:
-                firm.profile.job_openings = target_employees - num_employees
-            else:
-                firm.profile.job_openings = 0
+        # 3. 政府エージェントの意思決定（3ステップごと）
+        if self.state.step % 3 == 0:
+            logger.debug("Processing government decision...")
+            observation = self._build_government_observation()
+            try:
+                decision = self.government.decide_action(observation, self.state.step)
+                self._execute_government_decision(decision)
+                logger.info("Completed government decision")
+            except Exception as e:
+                logger.warning(f"Government decision failed: {e}")
 
-        if total_layoffs > 0:
-            logger.info(
-                f"Layoffs: {total_layoffs} employees laid off due to firm cash shortage"
-            )
+        # 4. 中央銀行エージェントの意思決定（毎ステップ）
+        logger.debug("Processing central bank decision...")
+        observation = self._build_central_bank_observation()
+        try:
+            decision = self.central_bank.decide_action(observation, self.state.step)
+            self._execute_central_bank_decision(decision)
+            logger.info("Completed central bank decision")
+        except Exception as e:
+            logger.warning(f"Central bank decision failed: {e}")
 
-        # 2. 労働市場マッチング
+        # 5. 労働市場マッチング（既存ロジックを維持）
+        logger.debug("Processing labor market matching...")
+
         # 求人を収集
         job_postings = []
         for firm in self.firms:
@@ -657,7 +662,7 @@ class Simulation:
                 )
                 job_postings.append(posting)
 
-        # 求職者を収集（失業者のみ）（Phase 9.9.4: Enum対応）
+        # 求職者を収集（失業者のみ）
         from src.models.data_models import EmploymentStatus
 
         job_seekers = []
@@ -690,11 +695,9 @@ class Simulation:
                         firm.profile.job_openings -= 1
                         break
 
-                # 世帯側: 雇用状態更新（Phase 9.9.4: Enum使用に修正）
+                # 世帯側: 雇用状態更新
                 for household in self.households:
                     if household.profile.id == match.household_id:
-                        from src.models.data_models import EmploymentStatus
-
                         household.profile.employment_status = EmploymentStatus.EMPLOYED
                         household.profile.monthly_income = match.wage
                         household.profile.employer_id = match.firm_id
@@ -702,14 +705,14 @@ class Simulation:
                         break
 
             logger.info(
-                f"Revision: {len(matches)} labor matches from {len(job_postings)} postings and {len(job_seekers)} seekers"
+                f"Labor market: {len(matches)} matches from {len(job_postings)} postings and {len(job_seekers)} seekers"
             )
         else:
             logger.info(
-                f"Revision: No labor matching ({len(job_postings)} postings, {len(job_seekers)} seekers)"
+                f"Labor market: No matching ({len(job_postings)} postings, {len(job_seekers)} seekers)"
             )
 
-        # 3. 金融市場統合
+        # 6. 金融市場統合
         self._financial_stage()
 
     def _financial_stage(self):
@@ -791,6 +794,560 @@ class Simulation:
             f"Financial: {len(deposit_transactions)} deposits (${sum(t.amount for t in deposit_transactions):.2f}), "
             f"{len(loan_transactions)} loans (${sum(t.amount for t in loan_transactions):.2f})"
         )
+
+    # ========== LLM意思決定用: 観察情報構築メソッド ==========
+
+    def _build_household_observation(self, household: HouseholdAgent) -> dict[str, any]:
+        """
+        世帯エージェント用の観察情報を構築
+
+        Args:
+            household: 世帯エージェント
+
+        Returns:
+            観察情報の辞書
+        """
+        # 市場価格情報（財市場）
+        market_prices = self.goods_market.get_market_prices()
+        avg_price = sum(market_prices.values()) / len(market_prices) if market_prices else 100.0
+
+        # 求人情報（労働市場）
+        job_openings_count = sum(f.profile.job_openings for f in self.firms)
+        avg_wage = sum(f.profile.wage_offered for f in self.firms if f.profile.job_openings > 0) / max(1, sum(1 for f in self.firms if f.profile.job_openings > 0))
+
+        # マクロ経済指標
+        current_indicators = self._calculate_indicators()
+
+        observation = {
+            "current_step": self.state.step,
+            "phase": self.state.phase,
+            "market_prices": {
+                "average_price": avg_price,
+                "price_range": {"min": min(market_prices.values()) if market_prices else 50.0, "max": max(market_prices.values()) if market_prices else 150.0},
+            },
+            "labor_market": {
+                "job_openings": job_openings_count,
+                "average_wage": avg_wage,
+                "unemployment_rate": current_indicators.get("unemployment_rate", 0.0),
+            },
+            "macro_indicators": {
+                "gdp": current_indicators.get("gdp", 0.0),
+                "inflation": current_indicators.get("inflation", 0.0),
+                "gini": current_indicators.get("gini", 0.0),
+            },
+            "personal_status": {
+                "cash": household.profile.cash,
+                "monthly_income": household.profile.monthly_income,
+                "employment_status": household.profile.employment_status.value if hasattr(household.profile.employment_status, "value") else household.profile.employment_status,
+                "employer_id": household.profile.employer_id,
+            },
+        }
+
+        return observation
+
+    def _build_firm_observation(self, firm: FirmAgent) -> dict[str, any]:
+        """
+        企業エージェント用の観察情報を構築
+
+        Args:
+            firm: 企業エージェント
+
+        Returns:
+            観察情報の辞書
+        """
+        # 市場価格（競合他社）
+        market_prices = self.goods_market.get_market_prices()
+        competitors_prices = [p for good_id, p in market_prices.items() if good_id != firm.profile.goods_type]
+        avg_competitor_price = sum(competitors_prices) / len(competitors_prices) if competitors_prices else firm.profile.price
+
+        # 労働市場状況
+        from src.models.data_models import EmploymentStatus
+
+        job_seekers_count = sum(1 for h in self.households if h.profile.employment_status == EmploymentStatus.UNEMPLOYED)
+        avg_market_wage = sum(f.profile.wage_offered for f in self.firms) / len(self.firms) if self.firms else 2000.0
+
+        # マクロ経済指標
+        current_indicators = self._calculate_indicators()
+
+        observation = {
+            "current_step": self.state.step,
+            "phase": self.state.phase,
+            "firm_status": {
+                "cash": firm.profile.cash,
+                "debt": firm.profile.debt,
+                "capital": firm.profile.capital,
+                "inventory": firm.profile.inventory,
+                "last_production": firm.profile.production_quantity,
+                "last_sales": firm.profile.sales_quantity,
+                "current_price": firm.profile.price,
+                "num_employees": len(firm.profile.employees),
+                "wage_offered": firm.profile.wage_offered,
+                "job_openings": firm.profile.job_openings,
+            },
+            "market_conditions": {
+                "average_competitor_price": avg_competitor_price,
+                "own_goods_type": firm.profile.goods_type,
+            },
+            "labor_market": {
+                "job_seekers": job_seekers_count,
+                "average_market_wage": avg_market_wage,
+            },
+            "macro_indicators": {
+                "gdp": current_indicators.get("gdp", 0.0),
+                "inflation": current_indicators.get("inflation", 0.0),
+                "unemployment_rate": current_indicators.get("unemployment_rate", 0.0),
+            },
+        }
+
+        return observation
+
+    def _build_government_observation(self) -> dict[str, any]:
+        """
+        政府エージェント用の観察情報を構築
+
+        Returns:
+            観察情報の辞書
+        """
+        # マクロ経済指標（すべて）
+        current_indicators = self._calculate_indicators()
+
+        # 税収・支出・準備金
+        budget_balance = self.government.state.tax_revenue - self.government.state.expenditure
+
+        # GDP成長率（前期比）
+        gdp_growth = 0.0
+        if len(self.state.history["gdp"]) >= 2:
+            prev_gdp = self.state.history["gdp"][-1]
+            current_gdp = current_indicators.get("gdp", 0.0)
+            if prev_gdp > 0:
+                gdp_growth = (current_gdp - prev_gdp) / prev_gdp
+
+        observation = {
+            "current_step": self.state.step,
+            "phase": self.state.phase,
+            "fiscal_status": {
+                "reserves": self.government.state.reserves,
+                "tax_revenue": self.government.state.tax_revenue,
+                "expenditure": self.government.state.expenditure,
+                "budget_balance": budget_balance,
+            },
+            "tax_policy": {
+                "vat_rate": self.government.state.vat_rate,
+                "income_tax_brackets": self.government.state.income_tax_brackets,
+            },
+            "welfare_policy": {
+                "ubi_enabled": self.government.state.ubi_enabled,
+                "ubi_amount": self.government.state.ubi_amount,
+                "unemployment_benefit_rate": self.government.state.unemployment_benefit_rate,
+            },
+            "macro_indicators": {
+                "gdp": current_indicators.get("gdp", 0.0),
+                "real_gdp": current_indicators.get("real_gdp", 0.0),
+                "gdp_growth": gdp_growth,
+                "inflation": current_indicators.get("inflation", 0.0),
+                "unemployment_rate": current_indicators.get("unemployment_rate", 0.0),
+                "gini": current_indicators.get("gini", 0.0),
+            },
+        }
+
+        return observation
+
+    def _build_central_bank_observation(self) -> dict[str, any]:
+        """
+        中央銀行エージェント用の観察情報を構築
+
+        Returns:
+            観察情報の辞書
+        """
+        # マクロ経済指標
+        current_indicators = self._calculate_indicators()
+
+        # 潜在GDP（簡略版: 過去平均の1.02倍）
+        if len(self.state.history["gdp"]) >= 3:
+            recent_gdp = self.state.history["gdp"][-3:]
+            potential_gdp = sum(recent_gdp) / len(recent_gdp) * 1.02
+        else:
+            potential_gdp = current_indicators.get("gdp", 100000.0) * 1.02
+
+        # 産出ギャップ
+        current_gdp = current_indicators.get("gdp", 100000.0)
+        output_gap = (current_gdp - potential_gdp) / potential_gdp if potential_gdp > 0 else 0.0
+
+        # 金融システムの健全性
+        loan_to_deposit_ratio = 0.0
+        if self.central_bank.state.total_deposits > 0:
+            loan_to_deposit_ratio = self.central_bank.state.total_loans / self.central_bank.state.total_deposits
+
+        # 求人率（ベバリッジ曲線用）
+        total_jobs = sum(f.profile.job_openings for f in self.firms)
+        vacancy_rate = total_jobs / len(self.households) if self.households else 0.0
+
+        observation = {
+            "current_step": self.state.step,
+            "phase": self.state.phase,
+            "monetary_policy": {
+                "current_policy_rate": self.central_bank.state.policy_rate,
+                "natural_rate": self.central_bank.state.natural_rate,
+                "inflation_target": self.central_bank.state.inflation_target,
+            },
+            "macro_indicators": {
+                "gdp": current_gdp,
+                "potential_gdp": potential_gdp,
+                "output_gap": output_gap,
+                "inflation": current_indicators.get("inflation", 0.0),
+                "unemployment_rate": current_indicators.get("unemployment_rate", 0.0),
+                "vacancy_rate": vacancy_rate,
+            },
+            "financial_system": {
+                "total_deposits": self.central_bank.state.total_deposits,
+                "total_loans": self.central_bank.state.total_loans,
+                "loan_to_deposit_ratio": loan_to_deposit_ratio,
+            },
+        }
+
+        return observation
+
+    # ========== LLM意思決定用: 決定実行メソッド ==========
+
+    def _execute_household_decision(self, household: HouseholdAgent, decision: dict[str, any]):
+        """
+        世帯エージェントのLLM決定を実行
+
+        Args:
+            household: 世帯エージェント
+            decision: LLMの決定結果
+        """
+        function_name = decision.get("function_name")
+        arguments = decision.get("arguments", {})
+
+        if function_name == "decide_consumption":
+            # 消費決定は次のProduction & Trading Stageで処理されるため、
+            # ここでは消費嗜好を更新するのみ
+            goods = arguments.get("goods", {})
+            logger.debug(f"Household {household.profile.id} decided to consume: {goods}")
+
+        elif function_name == "labor_action":
+            # Phase 1.4: 労働市場行動（辞職処理を追加）
+            action = arguments.get("action")
+
+            # 辞職処理（雇用中の場合のみ）
+            from src.models.data_models import EmploymentStatus
+
+            if action == "resign" and household.profile.employment_status == EmploymentStatus.EMPLOYED:
+                # 現在の雇用主から削除
+                employer_id = household.profile.employer_id
+                for firm in self.firms:
+                    if firm.profile.id == employer_id:
+                        if household.profile.id in firm.profile.employees:
+                            firm.profile.employees.remove(household.profile.id)
+                            firm.profile.job_openings += 1  # 求人枠を1つ増やす
+                        break
+
+                # 雇用状態を失業に変更
+                household.profile.employment_status = EmploymentStatus.UNEMPLOYED
+                household.profile.employer_id = None
+                household.profile.monthly_income = 0.0
+                household.profile.wage = 0.0
+                logger.debug(f"Household {household.profile.id} resigned from job")
+            else:
+                # その他のアクション（求職は自動的に労働市場マッチングで処理）
+                logger.debug(f"Household {household.profile.id} labor action: {action}")
+
+        elif function_name == "choose_housing":
+            # 住居選択
+            location = arguments.get("location")
+            if location and len(location) == 2:
+                household.profile.location = tuple(location)
+                logger.debug(f"Household {household.profile.id} moved to {location}")
+
+        elif function_name == "financial_decision":
+            # 金融決定（Phase 7.3.1: ヒューリスティック貯蓄も可能）
+            action = arguments.get("action")
+            amount = arguments.get("amount", 0.0)
+
+            if action == "save" and household.profile.cash >= amount:
+                household.profile.cash -= amount
+                household.profile.savings += amount
+                logger.debug(f"Household {household.profile.id} saved ${amount:.2f}")
+            elif action == "withdraw" and household.profile.savings >= amount:
+                household.profile.savings -= amount
+                household.profile.cash += amount
+                logger.debug(f"Household {household.profile.id} withdrew ${amount:.2f}")
+
+        elif function_name == "modify_needs":
+            # 消費嗜好の更新
+            preferences = arguments.get("preferences", {})
+            if preferences:
+                household.profile.consumption_preferences.update(preferences)
+                logger.debug(f"Household {household.profile.id} modified preferences")
+
+    def _execute_firm_decision(self, firm: FirmAgent, decision: dict[str, any]):
+        """
+        企業エージェントのLLM決定を実行
+
+        Args:
+            firm: 企業エージェント
+            decision: LLMの決定結果
+        """
+        function_name = decision.get("function_name")
+        arguments = decision.get("arguments", {})
+
+        if function_name == "decide_production":
+            # 生産量と価格を更新
+            target_production = arguments.get("target_production", firm.profile.production_quantity)
+            price = arguments.get("price", firm.profile.price)
+
+            # 生産能力チェック
+            capacity = firm.calculate_production_capacity(self.households)
+            actual_production = min(target_production, capacity)
+
+            # Phase 1.1: 需給バランスに応じた価格調整
+            # 在庫と販売量の比率から需給バランスを判定
+            if firm.profile.sales_quantity > 0:
+                inventory_sales_ratio = firm.profile.inventory / firm.profile.sales_quantity
+            else:
+                inventory_sales_ratio = 1.0  # デフォルト
+
+            # 在庫過剰（販売量の2倍以上）→ 価格を5-10%下げる
+            if inventory_sales_ratio > 2.0:
+                price_adjustment = 0.90  # 10%値下げ
+                price = price * price_adjustment
+                logger.debug(f"Firm {firm.profile.id}: Inventory excess, lowering price by 10%")
+            # 在庫不足（販売量の0.5倍以下）→ 価格を5-10%上げる
+            elif inventory_sales_ratio < 0.5 and firm.profile.inventory < 10.0:
+                price_adjustment = 1.10  # 10%値上げ
+                price = price * price_adjustment
+                logger.debug(f"Firm {firm.profile.id}: Inventory shortage, raising price by 10%")
+
+            # 価格制約: 最低50.0、最高200.0
+            price = max(50.0, min(200.0, price))
+
+            firm.profile.production_quantity = actual_production
+            firm.profile.price = price
+
+            logger.debug(f"Firm {firm.profile.id} set production={actual_production:.2f}, price=${price:.2f}")
+
+        elif function_name == "labor_decision":
+            # 労働市場行動
+            action = arguments.get("action")
+            wage_offered = arguments.get("wage_offered")
+            job_openings = arguments.get("job_openings")
+            fire_employee_ids = arguments.get("fire_employee_ids", [])
+
+            if action == "hire":
+                # Phase 1.2: 採用目標の動的計算
+                # 生産目標と現在の生産能力から必要な労働力を計算
+                current_employees = len(firm.profile.employees)
+                capacity = firm.calculate_production_capacity(self.households)
+                target_production = firm.profile.production_quantity
+
+                # 必要労働力を推定（生産能力が従業員数に比例すると仮定）
+                if capacity > 0 and current_employees > 0:
+                    # 生産能力に対する生産目標の比率
+                    production_ratio = target_production / capacity
+                    # 必要労働力 = 現従業員数 × 生産比率
+                    required_labor = int(current_employees * production_ratio)
+                    # 最低1人は必要
+                    required_labor = max(1, required_labor)
+                else:
+                    # 生産能力がゼロの場合、最低3人を目標
+                    required_labor = 3
+
+                # LLMの決定を尊重しつつ、計算された値も考慮
+                if job_openings is not None:
+                    # LLMの決定を優先するが、最低でも1人は募集
+                    calculated_openings = max(0, required_labor - current_employees)
+                    # LLM決定と計算値の平均を取る
+                    final_openings = int((job_openings + calculated_openings) / 2)
+                    firm.profile.job_openings = max(1, final_openings)
+                else:
+                    # LLMが指定しない場合は計算値を使用
+                    firm.profile.job_openings = max(1, required_labor - current_employees)
+
+                if wage_offered:
+                    firm.profile.wage_offered = max(1000.0, wage_offered)
+
+                logger.debug(
+                    f"Firm {firm.profile.id} posting {firm.profile.job_openings} jobs "
+                    f"(current: {current_employees}, required: {required_labor}) "
+                    f"at ${firm.profile.wage_offered:.2f}"
+                )
+
+            elif action == "fire" and fire_employee_ids:
+                # 解雇処理
+                from src.models.data_models import EmploymentStatus
+                for employee_id in fire_employee_ids:
+                    if employee_id in firm.profile.employees:
+                        firm.profile.employees.remove(employee_id)
+                        # 世帯の雇用状態更新
+                        for household in self.households:
+                            if household.profile.id == employee_id:
+                                household.profile.employment_status = EmploymentStatus.UNEMPLOYED
+                                household.profile.employer_id = None
+                                household.profile.monthly_income = 0.0
+                                household.profile.wage = 0.0
+                                break
+                logger.debug(f"Firm {firm.profile.id} fired {len(fire_employee_ids)} employees")
+
+            elif action == "adjust_wage" and wage_offered:
+                firm.profile.wage_offered = max(1000.0, wage_offered)
+                logger.debug(f"Firm {firm.profile.id} adjusted wage to ${wage_offered:.2f}")
+
+        elif function_name == "investment_decision":
+            # 投資決定
+            action = arguments.get("action")
+            amount = arguments.get("amount", 0.0)
+
+            # Phase 1.3: 利益ベースの投資メカニズム強化
+            # 月次利益を計算（売上 - 賃金コスト）
+            revenue = firm.profile.sales_quantity * firm.profile.price
+            num_employees = len(firm.profile.employees)
+            wage_cost = num_employees * firm.profile.wage_offered
+            monthly_profit = revenue - wage_cost
+
+            # 利益が出ている場合、最低限の資本維持投資を自動実行
+            if monthly_profit > 0:
+                # LLM決定が投資の場合: 利益の20%を投資
+                if action == "invest_capital":
+                    # LLM指定額と利益の20%の大きい方を投資
+                    auto_investment = monthly_profit * 0.20
+                    investment_amount = max(amount, auto_investment)
+
+                    if firm.profile.cash >= investment_amount:
+                        firm.profile.cash -= investment_amount
+                        firm.profile.capital += investment_amount
+                        # investmentフィールドを更新（Phase 9.8の投資指標）
+                        if hasattr(firm, "investment"):
+                            firm.investment = investment_amount
+                        logger.debug(
+                            f"Firm {firm.profile.id} invested ${investment_amount:.2f} in capital "
+                            f"(profit: ${monthly_profit:.2f})"
+                        )
+                # LLM決定が何もしない場合でも、利益の10%を自動投資
+                elif action == "do_nothing":
+                    auto_investment = monthly_profit * 0.10
+                    if firm.profile.cash >= auto_investment:
+                        firm.profile.cash -= auto_investment
+                        firm.profile.capital += auto_investment
+                        if hasattr(firm, "investment"):
+                            firm.investment = auto_investment
+                        logger.debug(
+                            f"Firm {firm.profile.id} auto-invested ${auto_investment:.2f} "
+                            f"(maintenance, profit: ${monthly_profit:.2f})"
+                        )
+
+            # 既存の投資ロジック
+            if action == "borrow":
+                # 借入申請（Financial Stageで処理されるため、ここでは記録のみ）
+                logger.debug(f"Firm {firm.profile.id} requested loan: ${amount:.2f}")
+            elif action == "invest_capital" and firm.profile.cash >= amount and monthly_profit <= 0:
+                # 利益がない場合のみ、LLM指定額をそのまま投資
+                firm.profile.cash -= amount
+                firm.profile.capital += amount
+                if hasattr(firm, "investment"):
+                    firm.investment = amount
+                logger.debug(f"Firm {firm.profile.id} invested ${amount:.2f} in capital")
+            elif action == "repay_debt" and firm.profile.debt >= amount and firm.profile.cash >= amount:
+                # 負債返済
+                firm.profile.cash -= amount
+                firm.profile.debt -= amount
+                logger.debug(f"Firm {firm.profile.id} repaid ${amount:.2f} debt")
+
+    def _execute_government_decision(self, decision: dict[str, any]):
+        """
+        政府エージェントのLLM決定を実行
+
+        Args:
+            decision: LLMの決定結果
+        """
+        function_name = decision.get("function_name")
+        arguments = decision.get("arguments", {})
+
+        if function_name == "adjust_tax_policy":
+            # 税制調整
+            income_tax_adjustment = arguments.get("income_tax_adjustment", 0.0)
+            vat_adjustment = arguments.get("vat_adjustment", 0.0)
+
+            # VAT税率調整（±5%以内）
+            self.government.state.vat_rate = max(0.0, min(0.5, self.government.state.vat_rate + vat_adjustment))
+
+            # 所得税率調整（全ブラケットに適用、±10%以内）
+            if income_tax_adjustment != 0.0:
+                new_brackets = []
+                for threshold, rate in self.government.state.income_tax_brackets:
+                    new_rate = max(0.0, min(0.5, rate + income_tax_adjustment))
+                    new_brackets.append((threshold, new_rate))
+                self.government.state.income_tax_brackets = new_brackets
+                self.government.taxation = self.government.taxation.__class__(brackets=new_brackets)
+
+            logger.debug(f"Government adjusted tax policy: VAT={self.government.state.vat_rate:.3f}")
+
+        elif function_name == "adjust_welfare_policy":
+            # 福祉政策調整
+            ubi_enabled = arguments.get("ubi_enabled")
+            ubi_amount = arguments.get("ubi_amount")
+            unemployment_benefit_rate = arguments.get("unemployment_benefit_rate")
+
+            if ubi_enabled is not None:
+                self.government.state.ubi_enabled = ubi_enabled
+            if ubi_amount is not None:
+                self.government.state.ubi_amount = max(0.0, ubi_amount)
+            if unemployment_benefit_rate is not None:
+                self.government.state.unemployment_benefit_rate = max(0.0, min(1.0, unemployment_benefit_rate))
+
+            logger.debug(f"Government adjusted welfare: UBI={self.government.state.ubi_enabled}, amount=${self.government.state.ubi_amount:.2f}")
+
+        elif function_name == "public_investment":
+            # 公共投資
+            investment_type = arguments.get("investment_type")
+            amount = arguments.get("amount", 0.0)
+
+            if investment_type != "none" and amount > 0 and self.government.state.reserves >= amount:
+                self.government.state.reserves -= amount
+                self.government.state.expenditure += amount
+                logger.debug(f"Government invested ${amount:.2f} in {investment_type}")
+
+        elif function_name == "maintain_policy":
+            # 現状維持
+            logger.debug("Government maintaining current policy")
+
+    def _execute_central_bank_decision(self, decision: dict[str, any]):
+        """
+        中央銀行エージェントのLLM決定を実行
+
+        Args:
+            decision: LLMの決定結果
+        """
+        function_name = decision.get("function_name")
+        arguments = decision.get("arguments", {})
+
+        if function_name == "set_policy_rate":
+            # 政策金利設定
+            target_rate = arguments.get("target_rate", self.central_bank.state.policy_rate)
+            use_taylor_rule = arguments.get("use_taylor_rule", True)
+
+            if use_taylor_rule:
+                # Taylor rule + 金利平滑化
+                self.central_bank.update_policy_rate(target_rate, use_smoothing=True)
+            else:
+                # 直接設定
+                self.central_bank.state.policy_rate = max(0.0, target_rate)
+
+            logger.debug(f"Central Bank set policy rate to {self.central_bank.state.policy_rate * 100:.2f}%")
+
+        elif function_name == "adjust_spreads":
+            # スプレッド調整
+            deposit_spread_change = arguments.get("deposit_spread_change", 0.0)
+            loan_spread_change = arguments.get("loan_spread_change", 0.0)
+
+            self.central_bank.state.deposit_rate_spread = max(-0.05, min(0.0, self.central_bank.state.deposit_rate_spread + deposit_spread_change))
+            self.central_bank.state.loan_rate_spread = max(0.0, min(0.10, self.central_bank.state.loan_rate_spread + loan_spread_change))
+
+            logger.debug(f"Central Bank adjusted spreads: deposit={self.central_bank.state.deposit_rate_spread:.3f}, loan={self.central_bank.state.loan_rate_spread:.3f}")
+
+        elif function_name == "maintain_policy":
+            # 現状維持
+            logger.debug("Central Bank maintaining current policy")
 
     def _calculate_indicators(self) -> dict[str, float]:
         """
