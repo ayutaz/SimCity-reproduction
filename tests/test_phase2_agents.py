@@ -111,9 +111,9 @@ class TestFirmTemplates:
 
         for firm_id, template in templates.items():
             goods_type = template["goods_type"]
-            assert (
-                goods_type in all_good_ids
-            ), f"Firm {firm_id} produces non-existent good: {goods_type}"
+            assert goods_type in all_good_ids, (
+                f"Firm {firm_id} produces non-existent good: {goods_type}"
+            )
 
     def test_firm_skills_exist(self):
         """企業のスキル要件が存在するスキルか"""
@@ -122,9 +122,9 @@ class TestFirmTemplates:
 
         for firm_id, template in templates.items():
             for skill_id in template["skill_requirements"].keys():
-                assert (
-                    skill_id in all_skill_ids
-                ), f"Firm {firm_id} requires non-existent skill: {skill_id}"
+                assert skill_id in all_skill_ids, (
+                    f"Firm {firm_id} requires non-existent skill: {skill_id}"
+                )
 
 
 class TestFirmAgent:
@@ -327,15 +327,21 @@ class TestGovernmentAgent:
         previous_wage = 2000.0
 
         # 失業1ヶ月目
-        benefit = agent.calculate_unemployment_benefit(previous_wage, months_unemployed=1)
+        benefit = agent.calculate_unemployment_benefit(
+            previous_wage, months_unemployed=1
+        )
         assert benefit == previous_wage * 0.5  # 50%
 
         # 失業6ヶ月目
-        benefit = agent.calculate_unemployment_benefit(previous_wage, months_unemployed=6)
+        benefit = agent.calculate_unemployment_benefit(
+            previous_wage, months_unemployed=6
+        )
         assert benefit == previous_wage * 0.5
 
         # 失業7ヶ月目（給付終了）
-        benefit = agent.calculate_unemployment_benefit(previous_wage, months_unemployed=7)
+        benefit = agent.calculate_unemployment_benefit(
+            previous_wage, months_unemployed=7
+        )
         assert benefit == 0.0
 
 

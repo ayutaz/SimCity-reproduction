@@ -34,7 +34,9 @@ class TestEconomicPhenomenaValidator:
 
         # Investment Volatility: investment more volatile than consumption
         consumption = 800 + np.arange(steps) * 2 + np.random.randn(steps) * 5
-        investment = 200 + np.arange(steps) * 0.5 + np.random.randn(steps) * 30  # Increased volatility
+        investment = (
+            200 + np.arange(steps) * 0.5 + np.random.randn(steps) * 30
+        )  # Increased volatility
 
         # Engel's Law: negative correlation between income and food expenditure ratio
         household_incomes = []

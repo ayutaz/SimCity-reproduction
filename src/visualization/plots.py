@@ -387,7 +387,9 @@ class EconomicPlots:
         # 回帰曲線
         x_line = np.linspace(min(prices), max(prices), 100)
         y_line = np.exp(intercept) * x_line**slope
-        ax.plot(x_line, y_line, "r--", linewidth=2, label=f"Elasticity={elasticity:.3f}")
+        ax.plot(
+            x_line, y_line, "r--", linewidth=2, label=f"Elasticity={elasticity:.3f}"
+        )
 
         ax.set_xlabel("Price")
         ax.set_ylabel("Quantity Demanded")
@@ -464,7 +466,11 @@ class EconomicPlots:
 
         # 平均値と中央値のライン
         ax.axvline(
-            mean_val, color="red", linestyle="--", linewidth=2, label=f"Mean={mean_val:.2f}"
+            mean_val,
+            color="red",
+            linestyle="--",
+            linewidth=2,
+            label=f"Mean={mean_val:.2f}",
         )
         ax.axvline(
             median_val,

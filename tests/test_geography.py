@@ -1,4 +1,5 @@
 """Tests for Geography System"""
+
 import sys
 from pathlib import Path
 
@@ -237,14 +238,20 @@ class TestCityMap:
 
     def test_get_statistics(self, city_map):
         # Add buildings with occupants
-        b1 = city_map.add_building(BuildingType.RESIDENTIAL, location=(10, 10), capacity=5)
+        b1 = city_map.add_building(
+            BuildingType.RESIDENTIAL, location=(10, 10), capacity=5
+        )
         b1.add_occupant(101)
         b1.add_occupant(102)
 
-        b2 = city_map.add_building(BuildingType.RESIDENTIAL, location=(20, 20), capacity=5)
+        b2 = city_map.add_building(
+            BuildingType.RESIDENTIAL, location=(20, 20), capacity=5
+        )
         b2.add_occupant(201)
 
-        b3 = city_map.add_building(BuildingType.COMMERCIAL, location=(30, 30), capacity=10)
+        b3 = city_map.add_building(
+            BuildingType.COMMERCIAL, location=(30, 30), capacity=10
+        )
         b3.add_occupant(1)
 
         stats = city_map.get_statistics()

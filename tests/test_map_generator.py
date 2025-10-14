@@ -1,4 +1,5 @@
 """Tests for Map Generator"""
+
 import sys
 from pathlib import Path
 

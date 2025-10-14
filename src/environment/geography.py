@@ -199,9 +199,7 @@ class CityMap:
 
     def get_buildings_by_type(self, building_type: BuildingType) -> list[Building]:
         """指定タイプの建物一覧を取得"""
-        return [
-            b for b in self.buildings.values() if b.building_type == building_type
-        ]
+        return [b for b in self.buildings.values() if b.building_type == building_type]
 
     def _find_empty_location(self) -> tuple[int, int] | None:
         """空き地を探す（ランダムサーチ）"""
@@ -215,9 +213,7 @@ class CityMap:
         return (int(x), int(y))
 
     @staticmethod
-    def calculate_distance(
-        loc1: tuple[int, int], loc2: tuple[int, int]
-    ) -> float:
+    def calculate_distance(loc1: tuple[int, int], loc2: tuple[int, int]) -> float:
         """
         2点間の距離を計算（ユークリッド距離）
 

@@ -108,9 +108,7 @@ def apply_price_shock(sim: Simulation, magnitude: float, good_id: str = "food_gr
     logger.warning(f"  Magnitude: {magnitude:.2f}x")
 
 
-def apply_policy_shock(
-    sim: Simulation, magnitude: float, policy_type: str = "ubi"
-):
+def apply_policy_shock(sim: Simulation, magnitude: float, policy_type: str = "ubi"):
     """
     政策ショックを適用
 
@@ -253,7 +251,9 @@ def run_experiment(
     # 総実行時間
     total_time = time.time() - start_time
     logger.info("=" * 60)
-    logger.info(f"Experiment completed in {total_time:.2f}s ({total_time / 60:.2f} min)")
+    logger.info(
+        f"Experiment completed in {total_time:.2f}s ({total_time / 60:.2f} min)"
+    )
     logger.info("=" * 60)
 
     # 結果の保存
@@ -308,9 +308,7 @@ def analyze_shock_impact(history: dict, shock_step: int, output_dir: Path):
     pre_unemployment = sum(history["unemployment_rate"][pre_start:pre_end]) / (
         pre_end - pre_start
     )
-    pre_inflation = sum(history["inflation"][pre_start:pre_end]) / (
-        pre_end - pre_start
-    )
+    pre_inflation = sum(history["inflation"][pre_start:pre_end]) / (pre_end - pre_start)
 
     # ショック後の平均
     post_gdp = sum(history["gdp"][post_start:post_end]) / (post_end - post_start)
@@ -323,7 +321,9 @@ def analyze_shock_impact(history: dict, shock_step: int, output_dir: Path):
 
     # 変化率
     gdp_change = (post_gdp - pre_gdp) / pre_gdp * 100
-    unemployment_change = (post_unemployment - pre_unemployment) * 100  # パーセントポイント
+    unemployment_change = (
+        post_unemployment - pre_unemployment
+    ) * 100  # パーセントポイント
     inflation_change = (post_inflation - pre_inflation) * 100  # パーセントポイント
 
     logger.info(f"\nImpact Analysis (window: {window} steps before/after shock):")

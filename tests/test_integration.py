@@ -65,7 +65,9 @@ class TestMarketIntegration:
         templates = loader.load_templates()
 
         firms = []
-        for i, firm_type in enumerate(["food_basic", "clothing_basic", "housing_basic"]):
+        for i, firm_type in enumerate(
+            ["food_basic", "clothing_basic", "housing_basic"]
+        ):
             if firm_type in templates:
                 template = templates[firm_type]
                 firm = FirmTemplateLoader.create_firm_profile(
@@ -211,7 +213,9 @@ class TestMarketIntegration:
 
         # Step 2: Goods market trading
         employed_households = [
-            h for h in test_households if h.employment_status == EmploymentStatus.EMPLOYED
+            h
+            for h in test_households
+            if h.employment_status == EmploymentStatus.EMPLOYED
         ]
 
         if employed_households:
@@ -514,7 +518,9 @@ class TestStatePersistence:
             assert len(sim2.state.firms) == num_firms_before
 
             # Verify household details
-            for h1, h2 in zip(sim1.state.households, sim2.state.households, strict=False):
+            for h1, h2 in zip(
+                sim1.state.households, sim2.state.households, strict=False
+            ):
                 assert h1.id == h2.id
                 assert h1.age == h2.age
                 assert abs(h1.cash - h2.cash) < 0.01  # Float comparison

@@ -114,11 +114,15 @@ class Simulation:
                     profile=HouseholdProfile(**profile),
                     llm_interface=self.llm_interface,
                 )
-                for profile in household_profiles[:self.config.agents.households.initial]
+                for profile in household_profiles[
+                    : self.config.agents.households.initial
+                ]
             ]
         else:
             # プロファイルを生成
-            generator = HouseholdProfileGenerator(random_seed=self.config.simulation.random_seed)
+            generator = HouseholdProfileGenerator(
+                random_seed=self.config.simulation.random_seed
+            )
             profiles = generator.generate(count=self.config.agents.households.initial)
 
             self.households = [
@@ -172,7 +176,9 @@ class Simulation:
         self.state.government = gov_state
         self.state.central_bank = cb_state
 
-        logger.info(f"Agents initialized: {len(self.households)} households, {len(self.firms)} firms")
+        logger.info(
+            f"Agents initialized: {len(self.households)} households, {len(self.firms)} firms"
+        )
 
     def _initialize_markets(self):
         """市場の初期化"""
@@ -181,15 +187,18 @@ class Simulation:
         # 労働市場（必要なパラメータのみ抽出）
         labor_config = self.config.markets.labor.model_dump()
         labor_params = {
-            k: v for k, v in labor_config.items()
-            if k in ["matching_probability", "consider_distance", "max_commute_distance"]
+            k: v
+            for k, v in labor_config.items()
+            if k
+            in ["matching_probability", "consider_distance", "max_commute_distance"]
         }
         self.labor_market = LaborMarket(**labor_params)
 
         # 財市場（必要なパラメータのみ抽出）
         goods_config = self.config.markets.goods.model_dump()
         goods_params = {
-            k: v for k, v in goods_config.items()
+            k: v
+            for k, v in goods_config.items()
             if k in ["price_adjustment_speed", "demand_elasticity", "inventory_target"]
         }
         self.goods_market = GoodsMarket(**goods_params)
@@ -197,7 +206,8 @@ class Simulation:
         # 金融市場（必要なパラメータのみ抽出）
         financial_config = self.config.markets.financial.model_dump()
         financial_params = {
-            k: v for k, v in financial_config.items()
+            k: v
+            for k, v in financial_config.items()
             if k in ["default_deposit_rate", "default_loan_rate", "reserve_requirement"]
         }
         self.financial_market = FinancialMarket(**financial_params)
@@ -305,9 +315,15 @@ class Simulation:
             household_incomes = []
 
         # GDP計算（簡略版）
-        total_consumption = sum(getattr(h, "consumption", 5000.0) for h in self.households)
+        total_consumption = sum(
+            getattr(h, "consumption", 5000.0) for h in self.households
+        )
         total_investment = sum(getattr(f, "investment", 10000.0) for f in self.firms)
-        government_spending = getattr(self.government.state, "expenditure", 0.0) if self.government else 0.0
+        government_spending = (
+            getattr(self.government.state, "expenditure", 0.0)
+            if self.government
+            else 0.0
+        )
 
         gdp = total_consumption + total_investment + government_spending
 
@@ -325,7 +341,8 @@ class Simulation:
         total_labor_force = len(self.households)
         if total_labor_force > 0:
             employed = sum(
-                1 for h in self.households
+                1
+                for h in self.households
                 if getattr(h.profile, "employment_status", "unemployed") == "employed"
             )
             unemployment_rate = (total_labor_force - employed) / total_labor_force
@@ -346,7 +363,11 @@ class Simulation:
             self.government.state.gini_coefficient = gini
 
         # 中央銀行の状態更新
-        policy_rate = self.central_bank.state.policy_rate if self.central_bank and self.central_bank.state else 0.02
+        policy_rate = (
+            self.central_bank.state.policy_rate
+            if self.central_bank and self.central_bank.state
+            else 0.02
+        )
 
         return {
             "gdp": gdp,
@@ -452,7 +473,9 @@ class Simulation:
             household_incomes = [
                 getattr(h.profile, "monthly_income", 50000.0) for h in self.households
             ]
-            indicators["average_income"] = sum(household_incomes) / len(household_incomes)
+            indicators["average_income"] = sum(household_incomes) / len(
+                household_incomes
+            )
         else:
             indicators["average_income"] = 0.0
 
@@ -462,12 +485,20 @@ class Simulation:
         indicators["total_investment"] = sum(
             getattr(f, "investment", 10000.0) for f in self.firms
         )
-        indicators["vacancy_rate"] = getattr(self.state.market, "vacancy_rate", 0.03) if self.state.market else 0.03
+        indicators["vacancy_rate"] = (
+            getattr(self.state.market, "vacancy_rate", 0.03)
+            if self.state.market
+            else 0.03
+        )
         indicators["government_spending"] = (
-            getattr(self.government.state, "expenditure", 0.0) if self.government and self.government.state else 0.0
+            getattr(self.government.state, "expenditure", 0.0)
+            if self.government and self.government.state
+            else 0.0
         )
         indicators["tax_revenue"] = (
-            getattr(self.government.state, "tax_revenue", 0.0) if self.government and self.government.state else 0.0
+            getattr(self.government.state, "tax_revenue", 0.0)
+            if self.government and self.government.state
+            else 0.0
         )
 
         return indicators
@@ -491,7 +522,7 @@ class Simulation:
                 "firms": len(self.state.firms),
                 "seed": self.config.simulation.random_seed,
                 "phase": self.state.phase,
-            }
+            },
         }
 
         # results.jsonの保存
@@ -508,7 +539,8 @@ class Simulation:
                 "final_unemployment": self.state.history.get("unemployment", [0])[-1],
                 "final_inflation": self.state.history.get("inflation", [0])[-1],
                 "final_gini": self.state.history.get("gini", [0])[-1],
-                "avg_gdp": sum(self.state.history["gdp"]) / len(self.state.history["gdp"]),
+                "avg_gdp": sum(self.state.history["gdp"])
+                / len(self.state.history["gdp"]),
                 "steps": self.state.step,
             }
 

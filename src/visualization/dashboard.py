@@ -8,7 +8,6 @@ Streamlitダッシュボード:
 - インタラクティブコントロール
 """
 
-
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -84,9 +83,7 @@ class SimCityDashboard:
         )
 
         if data_source == "Upload Results":
-            st.sidebar.file_uploader(
-                "Upload simulation results (CSV)", type=["csv"]
-            )
+            st.sidebar.file_uploader("Upload simulation results (CSV)", type=["csv"])
 
         # セッション状態に保存
         if "settings" not in st.session_state:
@@ -189,9 +186,7 @@ class SimCityDashboard:
         with col3:
             st.metric("Commercial", stats["buildings_by_type"].get("commercial", 0))
         with col4:
-            st.metric(
-                "Occupancy Rate", f"{stats['occupancy_rate']*100:.1f}%"
-            )
+            st.metric("Occupancy Rate", f"{stats['occupancy_rate'] * 100:.1f}%")
 
         st.divider()
 
@@ -226,9 +221,7 @@ class SimCityDashboard:
             st.pyplot(fig)
 
         elif map_type == "Combined View":
-            fig = self.map_generator.generate_combined_view(
-                city_map, figsize=(15, 5)
-            )
+            fig = self.map_generator.generate_combined_view(city_map, figsize=(15, 5))
             st.pyplot(fig)
 
     def _render_economic_indicators(self):

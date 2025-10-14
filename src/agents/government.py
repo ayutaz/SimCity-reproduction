@@ -43,7 +43,10 @@ class GovernmentAgent(BaseAgent):
         # システムプロンプトの読み込み
         if prompt_template_path is None:
             prompt_template_path = (
-                Path(__file__).parent.parent / "llm" / "prompts" / "government_system.txt"
+                Path(__file__).parent.parent
+                / "llm"
+                / "prompts"
+                / "government_system.txt"
             )
 
         system_prompt = load_prompt_template(prompt_template_path)
@@ -73,7 +76,7 @@ class GovernmentAgent(BaseAgent):
         # 税制情報
         tax_brackets_str = "\n".join(
             [
-                f"    Income > ${bracket[0]:.0f}: {bracket[1]*100:.1f}%"
+                f"    Income > ${bracket[0]:.0f}: {bracket[1] * 100:.1f}%"
                 for bracket in self.state.income_tax_brackets
             ]
         )
@@ -92,18 +95,18 @@ Government Financial Status:
 Tax Policy:
 - Income Tax Brackets:
 {tax_brackets_str}
-- VAT Rate: {self.state.vat_rate*100:.1f}%
+- VAT Rate: {self.state.vat_rate * 100:.1f}%
 
 Welfare Policy:
 - UBI Enabled: {self.state.ubi_enabled}
 - UBI Amount: ${self.state.ubi_amount:.2f}/month
-- Unemployment Benefit Rate: {self.state.unemployment_benefit_rate*100:.1f}%
+- Unemployment Benefit Rate: {self.state.unemployment_benefit_rate * 100:.1f}%
 
 Macroeconomic Indicators:
 - GDP: ${self.state.gdp:.2f}
 - Real GDP: ${self.state.real_gdp:.2f}
-- Inflation Rate: {self.state.inflation_rate*100:.2f}%
-- Unemployment Rate: {self.state.unemployment_rate*100:.2f}%
+- Inflation Rate: {self.state.inflation_rate * 100:.2f}%
+- Unemployment Rate: {self.state.unemployment_rate * 100:.2f}%
 - Gini Coefficient: {self.state.gini_coefficient:.3f}
 """
         return profile.strip()
@@ -136,7 +139,11 @@ Macroeconomic Indicators:
                             "description": "Reasoning for tax policy adjustment",
                         },
                     },
-                    "required": ["income_tax_adjustment", "vat_adjustment", "reasoning"],
+                    "required": [
+                        "income_tax_adjustment",
+                        "vat_adjustment",
+                        "reasoning",
+                    ],
                 },
             },
             # 福祉政策調整
@@ -163,7 +170,12 @@ Macroeconomic Indicators:
                             "description": "Reasoning for welfare policy adjustment",
                         },
                     },
-                    "required": ["ubi_enabled", "ubi_amount", "unemployment_benefit_rate", "reasoning"],
+                    "required": [
+                        "ubi_enabled",
+                        "ubi_amount",
+                        "unemployment_benefit_rate",
+                        "reasoning",
+                    ],
                 },
             },
             # 公共サービス投資

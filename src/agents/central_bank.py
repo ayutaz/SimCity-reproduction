@@ -90,13 +90,13 @@ class CentralBankAgent(BaseAgent):
 
         profile = f"""
 Central Bank Monetary Policy:
-- Policy Rate: {self.state.policy_rate*100:.2f}%
-- Natural Rate (r*): {self.state.natural_rate*100:.2f}%
-- Inflation Target (π*): {self.state.inflation_target*100:.2f}%
+- Policy Rate: {self.state.policy_rate * 100:.2f}%
+- Natural Rate (r*): {self.state.natural_rate * 100:.2f}%
+- Inflation Target (π*): {self.state.inflation_target * 100:.2f}%
 
 Interest Rate Structure:
-- Deposit Rate: {deposit_rate*100:.2f}% (Policy Rate - {abs(self.state.deposit_rate_spread)*100:.2f}%)
-- Loan Rate: {loan_rate*100:.2f}% (Policy Rate + {self.state.loan_rate_spread*100:.2f}%)
+- Deposit Rate: {deposit_rate * 100:.2f}% (Policy Rate - {abs(self.state.deposit_rate_spread) * 100:.2f}%)
+- Loan Rate: {loan_rate * 100:.2f}% (Policy Rate + {self.state.loan_rate_spread * 100:.2f}%)
 
 Taylor Rule Parameters:
 - Inflation Coefficient (α): {self.state.taylor_alpha}
@@ -238,7 +238,7 @@ Financial System:
         new_rate = max(0.0, new_rate)
 
         self.state.policy_rate = new_rate
-        logger.info(f"Policy rate updated: {new_rate*100:.2f}%")
+        logger.info(f"Policy rate updated: {new_rate * 100:.2f}%")
 
         return new_rate
 

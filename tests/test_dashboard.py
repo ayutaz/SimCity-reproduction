@@ -1,4 +1,5 @@
 """Tests for Dashboard"""
+
 import sys
 from pathlib import Path
 

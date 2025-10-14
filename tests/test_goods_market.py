@@ -1,4 +1,5 @@
 """Tests for Goods Market"""
+
 import sys
 from pathlib import Path
 
@@ -15,8 +16,14 @@ class TestGoodsMarket:
         return GoodsMarket()
 
     def test_basic_matching(self, market):
-        listings = [GoodListing(firm_id=1, good_id="food_basic", quantity=100, price=10.0)]
-        orders = [GoodOrder(household_id=101, good_id="food_basic", quantity=50, max_price=12.0)]
+        listings = [
+            GoodListing(firm_id=1, good_id="food_basic", quantity=100, price=10.0)
+        ]
+        orders = [
+            GoodOrder(
+                household_id=101, good_id="food_basic", quantity=50, max_price=12.0
+            )
+        ]
 
         transactions = market.match(listings, orders)
 
@@ -25,8 +32,14 @@ class TestGoodsMarket:
         assert transactions[0].price == 10.0
 
     def test_price_filter(self, market):
-        listings = [GoodListing(firm_id=1, good_id="food_basic", quantity=100, price=15.0)]
-        orders = [GoodOrder(household_id=101, good_id="food_basic", quantity=50, max_price=10.0)]
+        listings = [
+            GoodListing(firm_id=1, good_id="food_basic", quantity=100, price=15.0)
+        ]
+        orders = [
+            GoodOrder(
+                household_id=101, good_id="food_basic", quantity=50, max_price=10.0
+            )
+        ]
 
         transactions = market.match(listings, orders)
 
@@ -38,8 +51,12 @@ class TestGoodsMarket:
             GoodListing(firm_id=2, good_id="clothing_basic", quantity=50, price=20.0),
         ]
         orders = [
-            GoodOrder(household_id=101, good_id="food_basic", quantity=50, max_price=12.0),
-            GoodOrder(household_id=102, good_id="clothing_basic", quantity=30, max_price=25.0),
+            GoodOrder(
+                household_id=101, good_id="food_basic", quantity=50, max_price=12.0
+            ),
+            GoodOrder(
+                household_id=102, good_id="clothing_basic", quantity=30, max_price=25.0
+            ),
         ]
 
         transactions = market.match(listings, orders)
@@ -52,8 +69,14 @@ class TestGoodsMarket:
     def test_statistics(self, market):
         market.reset_statistics()
 
-        listings = [GoodListing(firm_id=1, good_id="food_basic", quantity=100, price=10.0)]
-        orders = [GoodOrder(household_id=101, good_id="food_basic", quantity=50, max_price=12.0)]
+        listings = [
+            GoodListing(firm_id=1, good_id="food_basic", quantity=100, price=10.0)
+        ]
+        orders = [
+            GoodOrder(
+                household_id=101, good_id="food_basic", quantity=50, max_price=12.0
+            )
+        ]
 
         market.match(listings, orders)
         stats = market.get_statistics()

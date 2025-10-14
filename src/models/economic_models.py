@@ -8,7 +8,6 @@ Economic models for SimCity simulation
 - マクロ経済指標計算
 """
 
-
 import numpy as np
 
 
@@ -351,9 +350,7 @@ class MacroeconomicIndicators:
             return 0.0
 
     @staticmethod
-    def calculate_unemployment_rate(
-        total_labor_force: int, employed: int
-    ) -> float:
+    def calculate_unemployment_rate(total_labor_force: int, employed: int) -> float:
         """
         失業率を計算
 

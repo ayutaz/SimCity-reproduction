@@ -15,6 +15,7 @@ from loguru import logger
 @dataclass
 class DepositRequest:
     """預金申請"""
+
     household_id: int
     amount: float
 
@@ -22,6 +23,7 @@ class DepositRequest:
 @dataclass
 class LoanRequest:
     """貸出申請"""
+
     firm_id: int
     amount: float
     purpose: str  # "capital_investment", "working_capital"
@@ -30,6 +32,7 @@ class LoanRequest:
 @dataclass
 class FinancialTransaction:
     """金融取引結果"""
+
     agent_id: int
     transaction_type: str  # "deposit", "loan"
     amount: float
@@ -68,9 +71,7 @@ class FinancialMarket:
         self.deposit_count = 0
         self.loan_count = 0
 
-        logger.info(
-            f"FinancialMarket initialized: policy_rate={policy_rate:.2%}"
-        )
+        logger.info(f"FinancialMarket initialized: policy_rate={policy_rate:.2%}")
 
     def get_deposit_rate(self) -> float:
         """預金金利を取得"""
@@ -114,9 +115,7 @@ class FinancialMarket:
 
         return transactions
 
-    def process_loans(
-        self, requests: list[LoanRequest]
-    ) -> list[FinancialTransaction]:
+    def process_loans(self, requests: list[LoanRequest]) -> list[FinancialTransaction]:
         """
         貸出を処理
 

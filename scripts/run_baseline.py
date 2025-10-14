@@ -144,9 +144,7 @@ def run_simulation(config, steps: int, output_dir: Path, checkpoint_interval: in
         history["investment"].append(metrics["total_investment"])
         history["vacancy_rate"].append(metrics.get("vacancy_rate", 0.0))
         history["policy_rate"].append(metrics.get("policy_rate", 0.02))
-        history["government_spending"].append(
-            metrics.get("government_spending", 0.0)
-        )
+        history["government_spending"].append(metrics.get("government_spending", 0.0))
         history["tax_revenue"].append(metrics.get("tax_revenue", 0.0))
 
         # 世帯所得と食料支出比率
@@ -199,7 +197,9 @@ def run_simulation(config, steps: int, output_dir: Path, checkpoint_interval: in
     # 総実行時間
     total_time = time.time() - start_time
     logger.info("=" * 60)
-    logger.info(f"Simulation completed in {total_time:.2f}s ({total_time / 60:.2f} min)")
+    logger.info(
+        f"Simulation completed in {total_time:.2f}s ({total_time / 60:.2f} min)"
+    )
     logger.info(f"Average time per step: {total_time / steps:.2f}s")
     logger.info("=" * 60)
 

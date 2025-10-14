@@ -94,8 +94,7 @@ class EconomicPhenomenaValidator:
         }
 
         logger.info(
-            f"Phillips Curve: r={correlation:.4f}, p={p_value:.4f}, "
-            f"valid={valid}"
+            f"Phillips Curve: r={correlation:.4f}, p={p_value:.4f}, valid={valid}"
         )
 
         return result
@@ -136,9 +135,7 @@ class EconomicPhenomenaValidator:
             "description": "Unemployment change vs GDP growth rate",
         }
 
-        logger.info(
-            f"Okun's Law: r={correlation:.4f}, p={p_value:.4f}, valid={valid}"
-        )
+        logger.info(f"Okun's Law: r={correlation:.4f}, p={p_value:.4f}, valid={valid}")
 
         return result
 
@@ -173,8 +170,7 @@ class EconomicPhenomenaValidator:
         }
 
         logger.info(
-            f"Beveridge Curve: r={correlation:.4f}, p={p_value:.4f}, "
-            f"valid={valid}"
+            f"Beveridge Curve: r={correlation:.4f}, p={p_value:.4f}, valid={valid}"
         )
 
         return result
@@ -224,9 +220,7 @@ class EconomicPhenomenaValidator:
             return float(np.mean(elasticities))
 
         # 必需品の弾力性
-        necessity_elasticities = [
-            calculate_elasticity(g.good_id) for g in necessities
-        ]
+        necessity_elasticities = [calculate_elasticity(g.good_id) for g in necessities]
         necessity_elasticities = [e for e in necessity_elasticities if e != 0.0]
         mean_necessity_elasticity = (
             np.mean(necessity_elasticities) if necessity_elasticities else 0.0
@@ -282,7 +276,9 @@ class EconomicPhenomenaValidator:
         food_ratios = []
 
         for step_incomes, step_ratios in zip(
-            self.history["household_incomes"], self.history["food_expenditure_ratios"], strict=False
+            self.history["household_incomes"],
+            self.history["food_expenditure_ratios"],
+            strict=False,
         ):
             incomes.extend(step_incomes)
             food_ratios.extend(step_ratios)
@@ -304,9 +300,7 @@ class EconomicPhenomenaValidator:
             "description": "Income vs Food expenditure ratio",
         }
 
-        logger.info(
-            f"Engel's Law: r={correlation:.4f}, p={p_value:.4f}, valid={valid}"
-        )
+        logger.info(f"Engel's Law: r={correlation:.4f}, p={p_value:.4f}, valid={valid}")
 
         return result
 
@@ -541,9 +535,7 @@ def run_validation_experiment(
         "metadata": {"steps": steps, "households": 200, "firms": 44},
     }
 
-    logger.info(
-        "To run actual validation, please load simulation result data and use:"
-    )
+    logger.info("To run actual validation, please load simulation result data and use:")
     logger.info("  validator = EconomicPhenomenaValidator(simulation_data)")
     logger.info("  report = validator.generate_report('validation_report.json')")
 

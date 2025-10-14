@@ -103,7 +103,9 @@ class TestHouseholdProfileGenerator:
 
     def test_age_distribution(self):
         """年齢分布のテスト"""
-        generator = HouseholdProfileGenerator(age_mean=40.0, age_std=12.0, random_seed=42)
+        generator = HouseholdProfileGenerator(
+            age_mean=40.0, age_std=12.0, random_seed=42
+        )
         profiles = generator.generate(count=100)
 
         ages = [p.age for p in profiles]

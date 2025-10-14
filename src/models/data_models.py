@@ -135,14 +135,10 @@ class FirmProfile:
     # 雇用
     wage_offered: float = 1500.0  # 提示賃金
     job_openings: int = 0  # 求人数
-    skill_requirements: dict[str, float] = field(
-        default_factory=dict
-    )  # 必要スキル
+    skill_requirements: dict[str, float] = field(default_factory=dict)  # 必要スキル
 
     # 所有構造
-    shareholders: dict[int, int] = field(
-        default_factory=dict
-    )  # household_id: 株式数
+    shareholders: dict[int, int] = field(default_factory=dict)  # household_id: 株式数
 
     # 位置
     location: tuple[int, int] = (0, 0)

@@ -1,4 +1,5 @@
 """Tests for Economic Plots"""
+
 import sys
 from pathlib import Path
 
@@ -133,9 +134,7 @@ class TestEconomicPlots:
         unemployment = np.linspace(0.03, 0.10, 30)
         vacancy = 0.08 - 0.5 * unemployment + np.random.randn(30) * 0.005
 
-        fig, stats = plots.plot_beveridge_curve(
-            unemployment.tolist(), vacancy.tolist()
-        )
+        fig, stats = plots.plot_beveridge_curve(unemployment.tolist(), vacancy.tolist())
 
         assert fig is not None
         assert isinstance(fig, plt.Figure)

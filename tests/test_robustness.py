@@ -25,7 +25,9 @@ class TestRobustnessTest:
             steps = 50
 
             # Generate data with same qualitative properties but different values
-            unemployment = np.linspace(0.05, 0.10, steps) + np.random.randn(steps) * 0.005
+            unemployment = (
+                np.linspace(0.05, 0.10, steps) + np.random.randn(steps) * 0.005
+            )
             inflation = -unemployment * 2 + 0.25 + np.random.randn(steps) * 0.01
             gdp = 1000 + np.cumsum(np.random.randn(steps) * 10)
             vacancy = -unemployment * 2 + 0.20 + np.random.randn(steps) * 0.005
@@ -74,7 +76,12 @@ class TestRobustnessTest:
                     "household_incomes": household_incomes,
                     "food_expenditure_ratios": food_expenditure_ratios,
                 },
-                "metadata": {"steps": steps, "households": 200, "firms": 44, "seed": seed},
+                "metadata": {
+                    "steps": steps,
+                    "households": 200,
+                    "firms": 44,
+                    "seed": seed,
+                },
             }
 
             runs.append(run_data)
@@ -192,22 +199,31 @@ class TestRobustnessTest:
             np.random.seed(seed)
             steps = 20
 
-            runs.append({
-                "history": {
-                    "gdp": (1000 + np.cumsum(np.random.randn(steps) * 10)).tolist(),
-                    "inflation": (0.02 + np.random.randn(steps) * 0.01).tolist(),
-                    "unemployment_rate": (0.05 + np.random.randn(steps) * 0.01).tolist(),
-                    "vacancy_rate": (0.03 + np.random.randn(steps) * 0.01).tolist(),
-                    "gini": (0.35 + np.random.randn(steps) * 0.02).tolist(),
-                    "consumption": (800 + np.arange(steps) * 2).tolist(),
-                    "investment": (200 + np.arange(steps) * 0.5).tolist(),
-                    "prices": {},
-                    "demands": {},
-                    "household_incomes": [[40000] * 10 for _ in range(steps)],
-                    "food_expenditure_ratios": [[0.15] * 10 for _ in range(steps)],
-                },
-                "metadata": {"steps": steps, "households": 10, "firms": 5, "seed": seed},
-            })
+            runs.append(
+                {
+                    "history": {
+                        "gdp": (1000 + np.cumsum(np.random.randn(steps) * 10)).tolist(),
+                        "inflation": (0.02 + np.random.randn(steps) * 0.01).tolist(),
+                        "unemployment_rate": (
+                            0.05 + np.random.randn(steps) * 0.01
+                        ).tolist(),
+                        "vacancy_rate": (0.03 + np.random.randn(steps) * 0.01).tolist(),
+                        "gini": (0.35 + np.random.randn(steps) * 0.02).tolist(),
+                        "consumption": (800 + np.arange(steps) * 2).tolist(),
+                        "investment": (200 + np.arange(steps) * 0.5).tolist(),
+                        "prices": {},
+                        "demands": {},
+                        "household_incomes": [[40000] * 10 for _ in range(steps)],
+                        "food_expenditure_ratios": [[0.15] * 10 for _ in range(steps)],
+                    },
+                    "metadata": {
+                        "steps": steps,
+                        "households": 10,
+                        "firms": 5,
+                        "seed": seed,
+                    },
+                }
+            )
 
         tester = RobustnessTest(runs)
 

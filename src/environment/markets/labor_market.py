@@ -210,7 +210,9 @@ class LaborMarket:
             )
 
             # 賃金スコア（高いほど良い、正規化）
-            wage_score = min(1.0, posting.wage_offered / max(1.0, seeker.reservation_wage * 1.5))
+            wage_score = min(
+                1.0, posting.wage_offered / max(1.0, seeker.reservation_wage * 1.5)
+            )
 
             # 総合スコア（スキル70%、賃金30%）
             total_score = 0.7 * skill_score + 0.3 * wage_score

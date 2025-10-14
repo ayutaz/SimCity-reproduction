@@ -41,7 +41,10 @@ class MapGenerator:
         logger.info("MapGenerator initialized")
 
     def generate_building_type_map(
-        self, city_map: CityMap, figsize: tuple[int, int] = (10, 10), save_path: str | None = None
+        self,
+        city_map: CityMap,
+        figsize: tuple[int, int] = (10, 10),
+        save_path: str | None = None,
     ) -> plt.Figure:
         """
         建物タイプマップを生成
@@ -120,7 +123,10 @@ class MapGenerator:
         return fig
 
     def generate_occupancy_heatmap(
-        self, city_map: CityMap, figsize: tuple[int, int] = (10, 10), save_path: str | None = None
+        self,
+        city_map: CityMap,
+        figsize: tuple[int, int] = (10, 10),
+        save_path: str | None = None,
     ) -> plt.Figure:
         """
         占有率ヒートマップを生成
@@ -228,7 +234,10 @@ class MapGenerator:
         return fig
 
     def generate_combined_view(
-        self, city_map: CityMap, figsize: tuple[int, int] = (15, 5), save_path: str | None = None
+        self,
+        city_map: CityMap,
+        figsize: tuple[int, int] = (15, 5),
+        save_path: str | None = None,
     ) -> plt.Figure:
         """
         複合ビューを生成（タイプ + 占有率 + 密度）
@@ -273,7 +282,9 @@ class MapGenerator:
             if building.capacity > 0:
                 occupancy_grid[y, x] = len(building.occupants) / building.capacity
 
-        im2 = axes[1].imshow(occupancy_grid, cmap="YlOrRd", vmin=0, vmax=1, origin="lower")
+        im2 = axes[1].imshow(
+            occupancy_grid, cmap="YlOrRd", vmin=0, vmax=1, origin="lower"
+        )
         axes[1].set_title("Occupancy Rate")
         axes[1].set_xlabel("X")
         axes[1].set_ylabel("Y")
@@ -289,7 +300,8 @@ class MapGenerator:
                 count = sum(
                     1
                     for b in buildings
-                    if abs(b.location[0] - x) <= radius and abs(b.location[1] - y) <= radius
+                    if abs(b.location[0] - x) <= radius
+                    and abs(b.location[1] - y) <= radius
                 )
                 density_grid[y, x] = count
 

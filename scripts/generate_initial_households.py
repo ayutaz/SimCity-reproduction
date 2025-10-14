@@ -54,7 +54,9 @@ def generate_initial_households(
     employed = sum(1 for p in profiles if p.employment_status.value == "employed")
 
     logger.info(f"Generated {len(profiles)} households")
-    logger.info(f"Age: mean={sum(ages) / len(ages):.1f}, min={min(ages)}, max={max(ages)}")
+    logger.info(
+        f"Age: mean={sum(ages) / len(ages):.1f}, min={min(ages)}, max={max(ages)}"
+    )
     logger.info(
         f"Initial Cash: mean=${sum(incomes) / len(incomes):.2f}, "
         f"min=${min(incomes):.2f}, max=${max(incomes):.2f}"
@@ -119,9 +121,7 @@ def load_initial_households(file_path: str = "data/initial_households.json") -> 
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Generate initial household dataset"
-    )
+    parser = argparse.ArgumentParser(description="Generate initial household dataset")
     parser.add_argument(
         "--count",
         type=int,

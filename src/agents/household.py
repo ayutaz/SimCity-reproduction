@@ -386,7 +386,9 @@ Consumption Preferences:
         if "age" in updates:
             self.attributes["age"] = updates["age"]
         if "employment_status" in updates:
-            self.attributes["employment_status"] = self._get_enum_value(updates["employment_status"])
+            self.attributes["employment_status"] = self._get_enum_value(
+                updates["employment_status"]
+            )
 
     def heuristic_savings_decision(self, current_step: int) -> dict[str, Any]:
         """
@@ -492,7 +494,11 @@ class HouseholdProfileGenerator:
             education_weights = [0.4, 0.4, 0.2]
 
         education_level = random.choices(
-            [EducationLevel.HIGH_SCHOOL, EducationLevel.COLLEGE, EducationLevel.GRADUATE],
+            [
+                EducationLevel.HIGH_SCHOOL,
+                EducationLevel.COLLEGE,
+                EducationLevel.GRADUATE,
+            ],
             weights=education_weights,
         )[0]
 

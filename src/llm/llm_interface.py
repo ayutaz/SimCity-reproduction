@@ -13,9 +13,7 @@ from loguru import logger
 try:
     from openai import OpenAI
 except ImportError as e:
-    raise ImportError(
-        "OpenAI package not found. Install with: uv add openai"
-    ) from e
+    raise ImportError("OpenAI package not found. Install with: uv add openai") from e
 
 
 class LLMInterface:
@@ -59,8 +57,7 @@ class LLMInterface:
         self.call_count = 0
 
         logger.info(
-            f"LLMInterface initialized with model={model}, "
-            f"temperature={temperature}"
+            f"LLMInterface initialized with model={model}, temperature={temperature}"
         )
 
     def function_call(
@@ -129,9 +126,7 @@ class LLMInterface:
                     }
                 else:
                     # Function Callがない場合（エラー）
-                    logger.warning(
-                        f"No function call in response: {message.content}"
-                    )
+                    logger.warning(f"No function call in response: {message.content}")
                     return {
                         "function_name": None,
                         "arguments": {},

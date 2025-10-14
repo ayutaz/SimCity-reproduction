@@ -96,9 +96,7 @@ class TestHouseholdProfileGenerator:
         high_school = [
             p for p in profiles if p.education_level == EducationLevel.HIGH_SCHOOL
         ]
-        graduate = [
-            p for p in profiles if p.education_level == EducationLevel.GRADUATE
-        ]
+        graduate = [p for p in profiles if p.education_level == EducationLevel.GRADUATE]
 
         if high_school and graduate:
             avg_skills_hs = sum(len(p.skills) for p in high_school) / len(high_school)
@@ -186,7 +184,9 @@ class TestInitialDataset:
 
     def test_dataset_exists(self, dataset_path):
         """Test that dataset file exists"""
-        assert dataset_path.exists(), "Initial dataset not found. Run generate_initial_households.py first"
+        assert dataset_path.exists(), (
+            "Initial dataset not found. Run generate_initial_households.py first"
+        )
 
     def test_dataset_structure(self, dataset_path):
         """Test dataset has correct structure"""

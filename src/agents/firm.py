@@ -105,7 +105,10 @@ class FirmAgent(BaseAgent):
 
         # スキル要件
         skills_str = ", ".join(
-            [f"{skill}: {level:.2f}" for skill, level in self.profile.skill_requirements.items()]
+            [
+                f"{skill}: {level:.2f}"
+                for skill, level in self.profile.skill_requirements.items()
+            ]
         )
 
         # 財務健全性
@@ -372,7 +375,9 @@ class FirmTemplateLoader:
         goods_category = GoodCategory(category_str)
 
         profile = FirmProfile(
-            id=int(firm_id) if isinstance(firm_id, str) and firm_id.isdigit() else hash(firm_id) % 1000000,
+            id=int(firm_id)
+            if isinstance(firm_id, str) and firm_id.isdigit()
+            else hash(firm_id) % 1000000,
             name=template["name"],
             goods_type=template["goods_type"],
             goods_category=goods_category,

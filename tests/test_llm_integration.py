@@ -49,12 +49,12 @@ class TestHouseholdAgent(BaseAgent):
         }
 
     def get_profile_str(self) -> str:
-        return f"""Name: {self.attributes['name']}
-Age: {self.attributes['age']}
-Education: {self.attributes['education']}
-Current Savings: ${self.attributes['savings']:,.0f}
-Monthly Income: ${self.attributes['monthly_income']:,.0f}
-Employment Status: {'Employed' if self.attributes['employed'] else 'Unemployed'}
+        return f"""Name: {self.attributes["name"]}
+Age: {self.attributes["age"]}
+Education: {self.attributes["education"]}
+Current Savings: ${self.attributes["savings"]:,.0f}
+Monthly Income: ${self.attributes["monthly_income"]:,.0f}
+Employment Status: {"Employed" if self.attributes["employed"] else "Unemployed"}
 """
 
     def get_available_actions(self):
@@ -119,9 +119,7 @@ def test_llm_interface():
         api_key = get_api_key()
     except ValueError as e:
         print(f"❌ Error: {e}")
-        print(
-            "\n.envファイルにOPENAI_API_KEYを設定してください:"
-        )
+        print("\n.envファイルにOPENAI_API_KEYを設定してください:")
         print("  cp .env.example .env")
         print("  # .envを編集してAPIキーを追加")
         return False

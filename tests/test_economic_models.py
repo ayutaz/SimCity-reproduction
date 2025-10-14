@@ -72,9 +72,7 @@ class TestTaxationSystem:
 
     def test_effective_rate(self):
         """実効税率の計算"""
-        tax_system = TaxationSystem(
-            [(0, 0.0), (20000, 0.1), (50000, 0.2)]
-        )
+        tax_system = TaxationSystem([(0, 0.0), (20000, 0.1), (50000, 0.2)])
 
         effective_rate = tax_system.calculate_effective_rate(30000)
         assert 0 < effective_rate < 0.1

@@ -127,7 +127,11 @@ SKILLS = [
         1.2,
     ),
     SkillDefinition(
-        "biz_sales", "Sales", SkillCategory.BUSINESS, "Sales and customer relations", 1.1
+        "biz_sales",
+        "Sales",
+        SkillCategory.BUSINESS,
+        "Sales and customer relations",
+        1.1,
     ),
     SkillDefinition(
         "biz_hr",
@@ -359,7 +363,11 @@ SKILLS = [
         0.9,
     ),
     SkillDefinition(
-        "svc_retail", "Retail", SkillCategory.SERVICE, "Retail sales and operations", 0.8
+        "svc_retail",
+        "Retail",
+        SkillCategory.SERVICE,
+        "Retail sales and operations",
+        0.8,
     ),
     SkillDefinition(
         "svc_food_service",

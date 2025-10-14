@@ -67,7 +67,8 @@ class RobustnessTest:
             "consistent": phillips_consistent,
             "values": phillips_values,
             "expected_direction": "negative correlation",
-            "success_rate": sum(1 for v in phillips_values if v < 0) / len(phillips_values),
+            "success_rate": sum(1 for v in phillips_values if v < 0)
+            / len(phillips_values),
         }
 
         # Okun's Law: 負の相関
@@ -81,21 +82,26 @@ class RobustnessTest:
         }
 
         # Beveridge Curve: 強い負の相関
-        beveridge_values = [v["beveridge_curve"]["correlation"] for v in all_validations]
+        beveridge_values = [
+            v["beveridge_curve"]["correlation"] for v in all_validations
+        ]
         beveridge_consistent = all(v < -0.5 for v in beveridge_values)
         consistency_results["beveridge_curve"] = {
             "consistent": beveridge_consistent,
             "values": beveridge_values,
             "expected_direction": "strong negative correlation (< -0.5)",
-            "success_rate": sum(1 for v in beveridge_values if v < -0.5) / len(beveridge_values),
+            "success_rate": sum(1 for v in beveridge_values if v < -0.5)
+            / len(beveridge_values),
         }
 
         # Price Elasticity: 必需品と贅沢品
         necessity_elasticities = [
-            v["price_elasticity"]["necessities"]["mean_elasticity"] for v in all_validations
+            v["price_elasticity"]["necessities"]["mean_elasticity"]
+            for v in all_validations
         ]
         luxury_elasticities = [
-            v["price_elasticity"]["luxuries"]["mean_elasticity"] for v in all_validations
+            v["price_elasticity"]["luxuries"]["mean_elasticity"]
+            for v in all_validations
         ]
         necessity_consistent = all(-1 < e < 0 for e in necessity_elasticities)
         luxury_consistent = all(e < -1 for e in luxury_elasticities)
@@ -112,9 +118,10 @@ class RobustnessTest:
                 "consistent": luxury_consistent,
             },
             "success_rate": (
-                sum(1 for e in necessity_elasticities if -1 < e < 0) +
-                sum(1 for e in luxury_elasticities if e < -1)
-            ) / (len(necessity_elasticities) + len(luxury_elasticities)),
+                sum(1 for e in necessity_elasticities if -1 < e < 0)
+                + sum(1 for e in luxury_elasticities if e < -1)
+            )
+            / (len(necessity_elasticities) + len(luxury_elasticities)),
         }
 
         # Engel's Law: 負の相関
@@ -128,7 +135,9 @@ class RobustnessTest:
         }
 
         # Investment Volatility: std(投資) > std(消費)
-        investment_volatilities = [v["investment_volatility"]["valid"] for v in all_validations]
+        investment_volatilities = [
+            v["investment_volatility"]["valid"] for v in all_validations
+        ]
         volatility_consistent = all(investment_volatilities)
         consistency_results["investment_volatility"] = {
             "consistent": volatility_consistent,
@@ -138,7 +147,9 @@ class RobustnessTest:
         }
 
         # Price Stickiness
-        price_stickiness_values = [v["price_stickiness"]["valid"] for v in all_validations]
+        price_stickiness_values = [
+            v["price_stickiness"]["valid"] for v in all_validations
+        ]
         stickiness_consistent = all(price_stickiness_values)
         consistency_results["price_stickiness"] = {
             "consistent": stickiness_consistent,
@@ -205,7 +216,9 @@ class RobustnessTest:
                 "std": std_val,
                 "min": float(np.min(values_arr)),
                 "max": float(np.max(values_arr)),
-                "cv": abs(std_val / mean_val) if mean_val != 0 else float('inf'),  # coefficient of variation
+                "cv": abs(std_val / mean_val)
+                if mean_val != 0
+                else float("inf"),  # coefficient of variation
             }
 
         significance_results = {
@@ -227,7 +240,9 @@ class RobustnessTest:
                 stability = "high variance (unstable)"
             stats_dict["stability"] = stability
 
-            logger.info(f"{indicator}: mean={stats_dict['mean']:.4f}, cv={cv:.4f} ({stability})")
+            logger.info(
+                f"{indicator}: mean={stats_dict['mean']:.4f}, cv={cv:.4f} ({stability})"
+            )
 
         return significance_results
 
@@ -262,7 +277,9 @@ class RobustnessTest:
             "trend_directions": gdp_trends,
             "consistent": gdp_consistent,
             "correlation_matrix": gdp_correlation_matrix,
-            "mean_correlation": float(np.mean([c for row in gdp_correlation_matrix for c in row if c != 1.0])),
+            "mean_correlation": float(
+                np.mean([c for row in gdp_correlation_matrix for c in row if c != 1.0])
+            ),
         }
 
         # Unemployment トレンド
@@ -275,7 +292,16 @@ class RobustnessTest:
             "trend_directions": unemployment_trends,
             "consistent": unemployment_consistent,
             "correlation_matrix": unemployment_correlation_matrix,
-            "mean_correlation": float(np.mean([c for row in unemployment_correlation_matrix for c in row if c != 1.0])),
+            "mean_correlation": float(
+                np.mean(
+                    [
+                        c
+                        for row in unemployment_correlation_matrix
+                        for c in row
+                        if c != 1.0
+                    ]
+                )
+            ),
         }
 
         logger.info(f"GDP trend consistent: {gdp_consistent}")
@@ -308,14 +334,12 @@ class RobustnessTest:
 
         # Statistical significance: すべてのCVが<0.6なら安定
         significance = report["statistical_significance"]
-        statistical_ok = all(
-            s["cv"] < 0.6 for s in significance.values()
-        )
+        statistical_ok = all(s["cv"] < 0.6 for s in significance.values())
 
         # Trend consistency: GDP and unemploymentが一致すればOK
         trend_ok = (
-            report["trend_consistency"]["gdp"]["consistent"] and
-            report["trend_consistency"]["unemployment_rate"]["consistent"]
+            report["trend_consistency"]["gdp"]["consistent"]
+            and report["trend_consistency"]["unemployment_rate"]["consistent"]
         )
 
         report["overall_assessment"] = {

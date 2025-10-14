@@ -35,7 +35,9 @@ class TestPerformance:
 
         assert len(profiles) == 200
         # Should complete in under 1 second
-        assert elapsed < 1.0, f"Household generation took {elapsed:.2f}s (expected <1.0s)"
+        assert elapsed < 1.0, (
+            f"Household generation took {elapsed:.2f}s (expected <1.0s)"
+        )
 
         print(f"\nHousehold generation (200): {elapsed:.3f}s")
 
@@ -56,7 +58,9 @@ class TestPerformance:
         elapsed = time.time() - start
 
         # Should complete in under 1.0 seconds
-        assert elapsed < 1.0, f"Gini coefficient calculation took {elapsed:.2f}s (expected <1.0s)"
+        assert elapsed < 1.0, (
+            f"Gini coefficient calculation took {elapsed:.2f}s (expected <1.0s)"
+        )
 
         print(f"\nGini coefficient (1000 calculations): {elapsed:.3f}s")
 
@@ -73,7 +77,9 @@ class TestPerformance:
         elapsed = time.time() - start
 
         # Should complete in under 0.1 seconds
-        assert elapsed < 0.1, f"Production function calculation took {elapsed:.2f}s (expected <0.1s)"
+        assert elapsed < 0.1, (
+            f"Production function calculation took {elapsed:.2f}s (expected <0.1s)"
+        )
 
         print(f"\nProduction function (10000 calculations): {elapsed:.3f}s")
 
@@ -93,7 +99,9 @@ def test_scalability_household_generation(count):
     expected_time = count / 200.0  # 200 households in ~1s
     max_time = expected_time * 2
 
-    assert elapsed < max_time, f"Generation of {count} households took {elapsed:.2f}s (expected <{max_time:.2f}s)"
+    assert elapsed < max_time, (
+        f"Generation of {count} households took {elapsed:.2f}s (expected <{max_time:.2f}s)"
+    )
 
     print(f"\nHousehold generation ({count}): {elapsed:.3f}s")
 

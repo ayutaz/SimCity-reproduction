@@ -99,9 +99,7 @@ class BaseAgent(ABC):
             action_name = action.get("action", "unknown")
             result = action.get("result", "")
 
-            memory_lines.append(
-                f"{i}. Step {step}: {action_name} - {result}"
-            )
+            memory_lines.append(f"{i}. Step {step}: {action_name} - {result}")
 
         return "\n".join(memory_lines)
 
@@ -157,9 +155,7 @@ Consider your profile, past actions, and current observation to make a rational 
 
         return "\n".join(lines)
 
-    def decide_action(
-        self, observation: dict[str, Any], step: int
-    ) -> dict[str, Any]:
+    def decide_action(self, observation: dict[str, Any], step: int) -> dict[str, Any]:
         """
         LLMを使用して行動を決定
 
@@ -207,9 +203,7 @@ Consider your profile, past actions, and current observation to make a rational 
             if len(self.memory) > self.memory_size * 2:
                 self.memory = self.memory[-self.memory_size :]
 
-            logger.debug(
-                f"Agent {self.agent_id} decided: {response['function_name']}"
-            )
+            logger.debug(f"Agent {self.agent_id} decided: {response['function_name']}")
 
             return {
                 "function_name": response["function_name"],
