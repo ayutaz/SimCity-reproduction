@@ -35,7 +35,9 @@
       "Bash(fi)",
       "Bash(if exist:*)",
       "Bash(cat:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(tree:*)",
+      "Bash(if not exist logs mkdir logs)"
     ],
     "deny": [],
     "ask": []

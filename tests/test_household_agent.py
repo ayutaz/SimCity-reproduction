@@ -193,11 +193,12 @@ class TestHouseholdAgent:
         agent = HouseholdAgent(profile=sample_profile, llm_interface=mock_llm)
         actions = agent.get_available_actions()
 
-        # 5つの行動が定義されているか
-        assert len(actions) == 5
+        # Phase 10.2: 統合関数を含めて6つの行動が定義されているか
+        assert len(actions) == 6
 
         action_names = [a["name"] for a in actions]
         expected_names = [
+            "decide_all_integrated",  # Phase 10.2: 統合意思決定関数
             "decide_consumption",
             "labor_action",
             "choose_housing",

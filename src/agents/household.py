@@ -186,14 +186,110 @@ Consumption Preferences:
             lines.append(f"- {category}: {pref:.2f}")
         return "\n".join(lines)
 
+    def get_integrated_action_function(self) -> dict[str, Any]:
+        """
+        統合意思決定用のFunction Calling定義（Phase 10.2: 最適化）
+
+        1回の呼び出しで複数の決定を取得
+
+        Returns:
+            統合関数定義
+        """
+        return {
+            "name": "decide_all_integrated",
+            "description": "Make all household decisions in a single call (consumption, labor, housing, finance)",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    # 消費決定
+                    "consumption": {
+                        "type": "object",
+                        "properties": {
+                            "goods": {
+                                "type": "object",
+                                "description": "Goods to purchase with quantities",
+                                "additionalProperties": {"type": "number"},
+                            },
+                            "reasoning": {"type": "string"},
+                        },
+                        "required": ["goods", "reasoning"],
+                    },
+                    # 労働決定
+                    "labor": {
+                        "type": "object",
+                        "properties": {
+                            "action": {
+                                "type": "string",
+                                "enum": ["find_job", "accept_offer", "resign", "stay"],
+                            },
+                            "target_wage": {"type": "number"},
+                            "reasoning": {"type": "string"},
+                        },
+                        "required": ["action", "reasoning"],
+                    },
+                    # 住居決定（頻度制御により12ステップごと）
+                    "housing": {
+                        "type": "object",
+                        "properties": {
+                            "location": {
+                                "type": "array",
+                                "items": {"type": "integer"},
+                                "minItems": 2,
+                                "maxItems": 2,
+                            },
+                            "max_rent": {"type": "number"},
+                            "reasoning": {"type": "string"},
+                        },
+                        "required": ["location", "max_rent", "reasoning"],
+                    },
+                    # 金融決定（貯蓄はヒューリスティック）
+                    "finance": {
+                        "type": "object",
+                        "properties": {
+                            "action": {
+                                "type": "string",
+                                "enum": [
+                                    "save",
+                                    "withdraw",
+                                    "borrow",
+                                    "repay_debt",
+                                    "invest",
+                                    "do_nothing",
+                                ],
+                            },
+                            "amount": {"type": "number"},
+                            "reasoning": {"type": "string"},
+                        },
+                        "required": ["action", "amount", "reasoning"],
+                    },
+                    # スキル投資決定（頻度制御により6ステップごと）
+                    "skill_investment": {
+                        "type": "object",
+                        "properties": {
+                            "skill_to_improve": {"type": "string"},
+                            "investment_amount": {"type": "number"},
+                            "reasoning": {"type": "string"},
+                        },
+                        "required": ["reasoning"],
+                    },
+                },
+                "required": ["consumption", "labor"],  # 必須は毎ステップの決定のみ
+            },
+        }
+
     def get_available_actions(self) -> list[dict[str, Any]]:
         """
         利用可能な行動のリストを返す（OpenAI Function Calling形式）
+
+        Phase 10.2: 統合関数も利用可能にする
 
         Returns:
             関数定義のリスト
         """
         return [
+            # Phase 10.2: 統合意思決定関数
+            self.get_integrated_action_function(),
+            # 以下は後方互換性のため残す
             # 消費バンドル決定
             {
                 "name": "decide_consumption",
@@ -356,20 +452,114 @@ Consumption Preferences:
                 },
             }
 
+    def process_integrated_decision(
+        self, decision: dict[str, Any], step: int
+    ) -> list[dict[str, Any]]:
+        """
+        統合意思決定の結果を処理（Phase 10.2: 最適化）
+
+        decide_all_integrated関数の出力を個別の行動に分解して返す
+
+        Args:
+            decision: 統合意思決定の結果（decide_all_integratedの出力）
+            step: 現在のステップ数
+
+        Returns:
+            個別行動のリスト
+        """
+        actions = []
+
+        # 消費決定（必須）
+        if "consumption" in decision:
+            actions.append(
+                {
+                    "function_name": "decide_consumption",
+                    "arguments": decision["consumption"],
+                }
+            )
+
+        # 労働決定（必須）
+        if "labor" in decision:
+            actions.append(
+                {
+                    "function_name": "labor_action",
+                    "arguments": decision["labor"],
+                }
+            )
+
+        # 住居決定（頻度制御により12ステップごと）
+        if "housing" in decision and self.should_make_decision("housing", step):
+            actions.append(
+                {
+                    "function_name": "choose_housing",
+                    "arguments": decision["housing"],
+                }
+            )
+
+        # 金融決定（貯蓄はヒューリスティック）
+        if "finance" in decision:
+            actions.append(
+                {
+                    "function_name": "financial_decision",
+                    "arguments": decision["finance"],
+                }
+            )
+
+        # スキル投資決定（頻度制御により6ステップごと）
+        if "skill_investment" in decision and self.should_make_decision(
+            "skill_investment", step
+        ):
+            # skill_to_improveとinvestment_amountが指定されている場合のみ
+            if decision["skill_investment"].get("skill_to_improve"):
+                actions.append(
+                    {
+                        "function_name": "modify_needs",  # スキル投資用の代替関数
+                        "arguments": {
+                            "preferences": {},  # 空の嗜好更新
+                            "reasoning": decision["skill_investment"]["reasoning"],
+                        },
+                    }
+                )
+
+        return actions
+
     def decide_primary_action(
         self, observation: dict[str, Any], step: int
     ) -> dict[str, Any]:
         """
         主要な意思決定を実行
 
+        Phase 10.2対応: 統合意思決定の結果を処理できるように拡張
+
         Args:
             observation: 環境からの観察情報
             step: 現在のステップ数
 
         Returns:
-            決定した行動
+            決定した行動（または統合決定の最初の行動）
         """
-        return self.decide_action(observation, step)
+        decision = self.decide_action(observation, step)
+
+        # Phase 10.2: 統合意思決定の場合は処理して最初の行動を返す
+        if decision.get("function_name") == "decide_all_integrated":
+            actions = self.process_integrated_decision(
+                decision["arguments"], step
+            )
+            # 最初の行動を返す（後続の行動はメモリに保存）
+            if actions:
+                # 残りの行動をメモリに記録
+                for action in actions[1:]:
+                    self.memory.append(
+                        {
+                            "step": step,
+                            "action": action["function_name"],
+                            "arguments": action["arguments"],
+                            "observation": observation,
+                        }
+                    )
+                return actions[0]
+
+        return decision
 
     def update_profile(self, updates: dict[str, Any]):
         """

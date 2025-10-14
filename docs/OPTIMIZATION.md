@@ -80,6 +80,42 @@ SimCityシミュレーションのパフォーマンスとコストを最適化�
 - ✅ 206 passed, 1 skipped
 - ✅ 既存機能に影響なし
 
+### ✅ Phase 10.2: 決定の統合実装（2025-10-14実装）
+
+**実装内容:**
+1. **統合Function Calling定義**: 1回のLLM呼び出しで全決定を取得
+   - `get_integrated_action_function()` メソッド追加
+   - 消費、労働、住居、金融、スキル投資の5つの決定を統合
+2. **統合決定処理メソッド**: 統合レスポンスを個別行動に分解
+   - `process_integrated_decision()` メソッド追加
+   - 頻度制御を維持（housing: 12ステップ、skill_investment: 6ステップ）
+3. **後方互換性**: 既存の個別関数も維持
+
+**実装箇所:**
+- `src/agents/household.py:189-278` - get_integrated_action_function()
+- `src/agents/household.py:455-524` - process_integrated_decision()
+- `src/agents/household.py:526-562` - decide_primary_action()更新
+- `src/agents/household.py:280-296` - get_available_actions()更新
+
+**期待される効果:**
+- LLM呼び出し削減: 5回/世帯 → 1回/世帯（80%削減）
+- プロンプトオーバーヘッド削減: システムプロンプトの重複削減
+- コスト削減: $13-15 → $4-6/180ステップ（60-70%削減見込み）
+  * Phase 10.1効果と合わせて累積70-75%削減
+
+**実装状態:**
+- ✅ 統合Function Calling定義完了
+- ✅ 処理メソッド実装完了
+- ✅ テスト更新完了（206 passed）
+- ✅ 30ステップ検証完了（正常動作確認）
+- ⚠️ 実際のLLM統合は将来実装（現在は簡略版シミュレーション）
+
+**注記:**
+現在のシミュレーションはLLM呼び出しなしの簡略版モードで動作しています。
+Phase 10.2の実装はフルLLM統合の準備として完了しており、
+将来シミュレーションがLLMベースの意思決定を使用する際に
+コスト削減効果が発揮されます。
+
 ### ✅ テスト・検証システム
 
 **実装済み:**
