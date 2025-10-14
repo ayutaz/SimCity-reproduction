@@ -66,11 +66,11 @@ class HouseholdAgent(BaseAgent):
 
         system_prompt = load_prompt_template(prompt_template_path)
 
-        # Phase 7.3.1: 決定頻度の設定（最適化）
+        # Phase 10.1: 決定頻度の最適化（OPTIMIZATION.md Phase 1）
         decision_frequencies = {
-            "savings": 3,  # 3ステップごと
-            "housing": 10,  # 10ステップごと
-            "skill_investment": 5,  # 5ステップごと
+            "housing": 12,  # 12ステップごと（1年）
+            "skill_investment": 6,  # 6ステップごと（半年）
+            # savings: ヒューリスティック（heuristic_savings_decision使用）
         }
 
         super().__init__(
