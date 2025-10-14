@@ -15,8 +15,8 @@ from src.agents.firm import FirmAgent, FirmTemplateLoader
 from src.agents.government import GovernmentAgent
 from src.agents.household import HouseholdAgent, HouseholdProfileGenerator
 from src.environment.markets.financial_market import FinancialMarket
-from src.environment.markets.goods_market import GoodsMarket
-from src.environment.markets.labor_market import LaborMarket
+from src.environment.markets.goods_market import GoodListing, GoodOrder, GoodsMarket
+from src.environment.markets.labor_market import JobPosting, JobSeeker, LaborMarket
 from src.llm.llm_interface import LLMInterface
 from src.models.data_models import (
     CentralBankState,
@@ -299,7 +299,7 @@ class Simulation:
             self._metabolic_stage()
 
         # Stage 4: Revision Stage (エージェント意思決定)
-        # TODO: Phase 2でエージェント実装後に追加
+        self._revision_stage()
 
         # マクロ経済指標の計算
         indicators = self._calculate_indicators()
@@ -324,8 +324,105 @@ class Simulation:
 
         企業が財を生産し、家計が購入
         """
-        # TODO: Phase 2でエージェント実装後に実装
-        logger.debug("Production and Trading Stage (placeholder)")
+        logger.debug("Production and Trading Stage")
+
+        # 1. 企業が生産して出品
+        listings = []
+        for firm in self.firms:
+            # 生産能力を計算
+            capacity = firm.calculate_production_capacity()
+
+            # 初期生産量（生産能力の50%）
+            production_qty = capacity * 0.5 if capacity > 0 else 100.0
+
+            # 在庫に追加
+            firm.profile.inventory += production_qty
+            firm.profile.production_quantity = production_qty
+
+            # 出品（在庫の80%を出品）
+            if firm.profile.inventory > 0:
+                listing_qty = firm.profile.inventory * 0.8
+                listing = GoodListing(
+                    firm_id=firm.profile.id,
+                    good_id=firm.profile.goods_type,
+                    quantity=listing_qty,
+                    price=firm.profile.price
+                )
+                listings.append(listing)
+
+        # 2. 世帯が消費注文
+        orders = []
+        for household in self.households:
+            # 消費予算（月収の80%）
+            budget = household.profile.monthly_income * 0.8
+            if budget <= 0:
+                continue
+
+            # 簡略版: 利用可能な財からランダムに1つ選択
+            if listings:
+                # ランダムに財を選択
+                target_listing = random.choice(listings)
+
+                # 購入数量を決定（予算内で）
+                affordable_qty = budget / target_listing.price
+                order_qty = min(affordable_qty, target_listing.quantity)
+
+                if order_qty > 0:
+                    order = GoodOrder(
+                        household_id=household.profile.id,
+                        good_id=target_listing.good_id,
+                        quantity=order_qty,
+                        max_price=target_listing.price * 1.2  # 20%まで高く払える
+                    )
+                    orders.append(order)
+
+        # 3. 市場マッチング
+        transactions = self.goods_market.match(listings, orders)
+
+        # 4. 取引結果を反映
+        total_consumption = 0.0
+
+        # 財の種類判定用にインポート
+        from src.data.goods_types import get_good
+        from src.models.data_models import GoodCategory
+
+        for txn in transactions:
+            # 企業側: 収入増加、在庫減少
+            for firm in self.firms:
+                if firm.profile.id == txn.firm_id:
+                    firm.profile.cash += txn.total_value
+                    firm.profile.inventory -= txn.quantity
+                    firm.profile.sales_quantity += txn.quantity
+                    break
+
+            # 世帯側: 支出記録
+            for household in self.households:
+                if household.profile.id == txn.household_id:
+                    # consumption属性を追加（動的）
+                    if not hasattr(household, 'consumption'):
+                        household.consumption = 0.0
+                    household.consumption += txn.total_value
+                    total_consumption += txn.total_value
+
+                    # 食料支出と総支出を追跡
+                    if not hasattr(household, 'food_spending'):
+                        household.food_spending = 0.0
+                    if not hasattr(household, 'total_spending'):
+                        household.total_spending = 0.0
+
+                    household.total_spending += txn.total_value
+
+                    # 財が食料カテゴリかチェック
+                    good_def = get_good(txn.good_id)
+                    if good_def and good_def.category == GoodCategory.FOOD:
+                        household.food_spending += txn.total_value
+
+                    break
+
+        logger.info(
+            f"Production & Trading: {len(transactions)} transactions, "
+            f"total consumption: ${total_consumption:.2f}"
+        )
 
     def _taxation_and_dividend_stage(self):
         """
@@ -334,8 +431,71 @@ class Simulation:
         政府が税金を徴収し、UBI等を配分
         企業が配当を支払う
         """
-        # TODO: Phase 2でエージェント実装後に実装
-        logger.debug("Taxation and Dividend Stage (placeholder)")
+        logger.debug("Taxation and Dividend Stage")
+
+        # 1. 所得税徴収
+        total_income_tax = 0.0
+        for household in self.households:
+            if household.profile.monthly_income > 0:
+                tax = self.government.collect_income_tax(household.profile.monthly_income)
+                total_income_tax += tax
+                # 世帯の収入から差し引き（簡略版）
+
+        # 2. VAT徴収（取引総額から）
+        total_vat = 0.0
+        total_transactions = sum(
+            getattr(h, 'consumption', 0.0) for h in self.households
+        )
+        if total_transactions > 0:
+            total_vat = self.government.collect_vat(total_transactions)
+
+        # 3. 政府の税収を更新
+        self.government.state.tax_revenue = total_income_tax + total_vat
+
+        # 4. UBI配布
+        ubi_expenditure = 0.0
+        if self.government.state.ubi_enabled:
+            ubi_expenditure = self.government.distribute_ubi(len(self.households))
+            # 各世帯にUBIを付与
+            for household in self.households:
+                household.profile.monthly_income += self.government.state.ubi_amount
+
+        # 5. 失業給付
+        unemployment_expenditure = 0.0
+        for household in self.households:
+            if household.profile.employment_status == "unemployed":
+                # 失業給付（前職賃金の50%、簡略版では月収の50%）
+                benefit = self.government.calculate_unemployment_benefit(
+                    household.profile.monthly_income,
+                    months_unemployed=1  # 簡略版
+                )
+                unemployment_expenditure += benefit
+                household.profile.monthly_income += benefit
+
+        # 6. 企業配当（純利益の10%）
+        total_dividends = 0.0
+        for firm in self.firms:
+            # 純利益 = 売上 - コスト（賃金）
+            revenue = firm.profile.cash
+            # 簡略版: 配当は現金の1%
+            dividend = max(0, revenue * 0.01)
+            firm.profile.cash -= dividend
+            total_dividends += dividend
+
+        # 7. 政府支出を更新
+        self.government.state.expenditure = (
+            ubi_expenditure + unemployment_expenditure + total_dividends
+        )
+
+        # 8. 政府準備金を更新
+        budget_balance = self.government.state.tax_revenue - self.government.state.expenditure
+        self.government.state.reserves += budget_balance
+
+        logger.info(
+            f"Taxation & Dividend: Tax=${total_income_tax + total_vat:.2f}, "
+            f"Spending=${self.government.state.expenditure:.2f}, "
+            f"Balance=${budget_balance:.2f}"
+        )
 
     def _metabolic_stage(self):
         """
@@ -343,15 +503,191 @@ class Simulation:
 
         新しい家計が流入
         """
-        # TODO: Phase 2で家計エージェント実装後に追加
+        logger.debug("Metabolic Stage")
+
         max_households = self.config.agents.households.max
-        current_households = len(self.state.households)
+        current_households = len(self.households)
         monthly_inflow = self.config.agents.households.monthly_inflow
 
         if current_households < max_households:
-            new_households = min(monthly_inflow, max_households - current_households)
-            logger.debug(f"Adding {new_households} new households")
-            # 実際の家計追加はPhase 2で実装
+            new_count = min(monthly_inflow, max_households - current_households)
+
+            if new_count > 0:
+                # 新規世帯を生成
+                generator = HouseholdProfileGenerator(
+                    random_seed=self.config.simulation.random_seed + self.state.step
+                )
+                new_profiles = generator.generate(count=new_count)
+
+                # HouseholdAgentを初期化して追加
+                for profile in new_profiles:
+                    new_household = HouseholdAgent(
+                        household_id=profile.id,
+                        profile=profile,
+                        llm_interface=self.llm_interface
+                    )
+                    self.households.append(new_household)
+                    self.state.households.append(profile)
+
+                logger.info(f"Metabolic: Added {new_count} new households (total: {len(self.households)})")
+
+    def _revision_stage(self):
+        """
+        Stage 4: 意思決定ステージ
+
+        エージェントが意思決定を行う（簡略版: LLMなし）
+        """
+        logger.debug("Revision Stage (simplified)")
+
+        # 1. 企業: 価格調整
+        for firm in self.firms:
+            # 価格を±5%でランダム調整
+            adjustment = random.uniform(-0.05, 0.05)
+            firm.profile.price *= (1 + adjustment)
+            firm.profile.price = max(1.0, firm.profile.price)  # 最低価格1.0
+
+            # 求人枠の調整（従業員が0の場合は募集）
+            num_employees = len(firm.profile.employees)
+            target_employees = 5  # 簡略版: 各企業5人目標
+            if num_employees < target_employees:
+                firm.profile.job_openings = target_employees - num_employees
+            else:
+                firm.profile.job_openings = 0
+
+        # 2. 労働市場マッチング
+        # 求人を収集
+        job_postings = []
+        for firm in self.firms:
+            if firm.profile.job_openings > 0:
+                posting = JobPosting(
+                    firm_id=firm.profile.id,
+                    num_openings=firm.profile.job_openings,
+                    wage_offered=firm.profile.wage_offered,
+                    skill_requirements=firm.profile.skill_requirements,
+                    location=firm.profile.location
+                )
+                job_postings.append(posting)
+
+        # 求職者を収集（失業者のみ）
+        job_seekers = []
+        for household in self.households:
+            if household.profile.employment_status == "unemployed":
+                # 最低賃金は月収の80%（簡略版）
+                reservation_wage = household.profile.monthly_income * 0.8
+                if reservation_wage < 1000:  # 最低希望賃金
+                    reservation_wage = 1000
+
+                seeker = JobSeeker(
+                    household_id=household.profile.id,
+                    skills=household.profile.skills,
+                    reservation_wage=reservation_wage,
+                    location=household.profile.location,
+                    currently_employed=False
+                )
+                job_seekers.append(seeker)
+
+        # 労働市場マッチング実行
+        if job_postings and job_seekers:
+            matches = self.labor_market.match(job_postings, job_seekers)
+
+            # マッチング結果を反映
+            for match in matches:
+                # 企業側: 従業員追加
+                for firm in self.firms:
+                    if firm.profile.id == match.firm_id:
+                        firm.profile.employees.append(match.household_id)
+                        firm.profile.job_openings -= 1
+                        break
+
+                # 世帯側: 雇用状態更新
+                for household in self.households:
+                    if household.profile.id == match.household_id:
+                        household.profile.employment_status = "employed"
+                        household.profile.monthly_income = match.wage
+                        household.profile.employer_id = match.firm_id
+                        break
+
+            logger.info(f"Revision: {len(matches)} labor matches")
+        else:
+            logger.debug("Revision: No labor matching (no postings or seekers)")
+
+        # 3. 金融市場統合
+        self._financial_stage()
+
+    def _financial_stage(self):
+        """
+        金融市場統合
+
+        世帯の預金と企業の借入を処理
+        """
+        logger.debug("Financial Stage")
+
+        # 1. 政策金利の更新
+        if self.central_bank and self.central_bank.state:
+            self.financial_market.update_policy_rate(self.central_bank.state.policy_rate)
+
+        # 2. 世帯の預金申請を収集
+        from src.environment.markets.financial_market import DepositRequest, LoanRequest
+
+        deposit_requests = []
+        for household in self.households:
+            # 余剰現金がある場合に預金（月収の2ヶ月分以上の現金）
+            if household.profile.cash > household.profile.monthly_income * 2.0:
+                surplus = household.profile.cash - household.profile.monthly_income * 2.0
+                deposit_amount = surplus * 0.5  # 余剰の50%を預金
+
+                if deposit_amount > 100.0:  # 最低預金額
+                    deposit_requests.append(
+                        DepositRequest(
+                            household_id=household.profile.id,
+                            amount=deposit_amount
+                        )
+                    )
+
+        # 3. 企業の借入申請を収集
+        loan_requests = []
+        for firm in self.firms:
+            # 月次賃金総額を計算
+            num_employees = len(firm.profile.employees)
+            monthly_wage_bill = num_employees * firm.profile.wage_offered if num_employees > 0 else 0.0
+
+            # 運転資金が不足している場合に借入（賃金総額の2ヶ月分未満）
+            required_cash = monthly_wage_bill * 2.0
+            if firm.profile.cash < required_cash and monthly_wage_bill > 0:
+                loan_amount = monthly_wage_bill * 3.0  # 賃金総額の3ヶ月分を借入
+
+                loan_requests.append(
+                    LoanRequest(
+                        firm_id=firm.profile.id,
+                        amount=loan_amount,
+                        purpose="working_capital"
+                    )
+                )
+
+        # 4. 金融市場で処理
+        deposit_transactions = self.financial_market.process_deposits(deposit_requests)
+        loan_transactions = self.financial_market.process_loans(loan_requests)
+
+        # 5. 預金結果を反映
+        for txn in deposit_transactions:
+            for household in self.households:
+                if household.profile.id == txn.agent_id:
+                    household.profile.cash -= txn.amount
+                    household.profile.savings += txn.amount
+                    break
+
+        # 6. 借入結果を反映
+        for txn in loan_transactions:
+            for firm in self.firms:
+                if firm.profile.id == txn.agent_id:
+                    firm.profile.cash += txn.amount
+                    firm.profile.debt += txn.amount
+                    break
+
+        logger.info(
+            f"Financial: {len(deposit_transactions)} deposits (${sum(t.amount for t in deposit_transactions):.2f}), "
+            f"{len(loan_transactions)} loans (${sum(t.amount for t in loan_transactions):.2f})"
+        )
 
     def _calculate_indicators(self) -> dict[str, float]:
         """
@@ -444,6 +780,43 @@ class Simulation:
         for key, value in indicators.items():
             if key in self.state.history:
                 self.state.history[key].append(value)
+
+        # 価格・需要データを記録（財市場から取得）
+        market_prices = self.goods_market.get_market_prices()
+        market_demands = self.goods_market.get_market_demands()
+
+        for good_id, price in market_prices.items():
+            if good_id not in self.state.history["prices"]:
+                self.state.history["prices"][good_id] = []
+            self.state.history["prices"][good_id].append(price)
+
+        for good_id, demand in market_demands.items():
+            if good_id not in self.state.history["demands"]:
+                self.state.history["demands"][good_id] = []
+            self.state.history["demands"][good_id].append(demand)
+
+        # 食料支出比率を計算して記録
+        food_expenditure_ratios = []
+        for household in self.households:
+            total_spending = getattr(household, 'total_spending', 0.0)
+            food_spending = getattr(household, 'food_spending', 0.0)
+
+            if total_spending > 0:
+                ratio = food_spending / total_spending
+                food_expenditure_ratios.append(ratio)
+
+        # 平均食料支出比率を記録
+        if food_expenditure_ratios:
+            avg_ratio = sum(food_expenditure_ratios) / len(food_expenditure_ratios)
+            self.state.history["food_expenditure_ratios"].append(avg_ratio)
+        else:
+            # 取引がない場合は0を記録
+            self.state.history["food_expenditure_ratios"].append(0.0)
+
+        # 次のステップのために支出をリセット
+        for household in self.households:
+            household.food_spending = 0.0
+            household.total_spending = 0.0
 
     def save_state(self, filepath: str | Path):
         """
