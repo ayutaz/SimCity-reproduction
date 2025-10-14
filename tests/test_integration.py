@@ -181,7 +181,9 @@ class TestMarketIntegration:
         assert stats["total_deposits"] == 10000.0
         assert stats["total_loans"] == 8000.0
         assert stats["loan_to_deposit_ratio"] > 0
-        assert stats["loan_to_deposit_ratio"] <= 0.9  # LTD 比率が 90% 以下であることを確認
+        assert (
+            stats["loan_to_deposit_ratio"] <= 0.9
+        )  # LTD 比率が 90% 以下であることを確認
 
     def test_multi_market_integration(
         self, labor_market, goods_market, financial_market, test_households, test_firms

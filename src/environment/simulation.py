@@ -162,26 +162,24 @@ class Simulation:
                 num_initial_firms = len(templates)
 
             selected_templates = random.sample(
-                list(templates.items()),
-                k=num_initial_firms
+                list(templates.items()), k=num_initial_firms
             )
 
             # 企業エージェントを生成
             self.firms = []
             city_center = (50, 50)  # デフォルト都市中心
 
-            for i, (firm_id, template) in enumerate(selected_templates):
+            for i, (_firm_id, template) in enumerate(selected_templates):
                 # プロファイル生成
                 profile = FirmTemplateLoader.create_firm_profile(
                     firm_id=str(i + 1),  # 連番ID
                     template=template,
-                    location=city_center
+                    location=city_center,
                 )
 
                 # エージェント初期化
                 firm_agent = FirmAgent(
-                    profile=profile,
-                    llm_interface=self.llm_interface
+                    profile=profile, llm_interface=self.llm_interface
                 )
 
                 self.firms.append(firm_agent)
@@ -348,7 +346,9 @@ class Simulation:
                         break
 
         if total_wages_paid > 0:
-            logger.info(f"Wage payments: ${total_wages_paid:.2f} paid to {sum(len(f.profile.employees) for f in self.firms)} employees")
+            logger.info(
+                f"Wage payments: ${total_wages_paid:.2f} paid to {sum(len(f.profile.employees) for f in self.firms)} employees"
+            )
 
         # 1. 企業の投資指標を初期化・計算
         for firm in self.firms:
@@ -377,7 +377,7 @@ class Simulation:
                     firm_id=firm.profile.id,
                     good_id=firm.profile.goods_type,
                     quantity=listing_qty,
-                    price=firm.profile.price
+                    price=firm.profile.price,
                 )
                 listings.append(listing)
 
@@ -403,7 +403,7 @@ class Simulation:
                         household_id=household.profile.id,
                         good_id=target_listing.good_id,
                         quantity=order_qty,
-                        max_price=target_listing.price * 1.2  # 20%まで高く払える
+                        max_price=target_listing.price * 1.2,  # 20%まで高く払える
                     )
                     orders.append(order)
 
@@ -430,15 +430,15 @@ class Simulation:
             for household in self.households:
                 if household.profile.id == txn.household_id:
                     # consumption属性を追加（動的）
-                    if not hasattr(household, 'consumption'):
+                    if not hasattr(household, "consumption"):
                         household.consumption = 0.0
                     household.consumption += txn.total_value
                     total_consumption += txn.total_value
 
                     # 食料支出と総支出を追跡
-                    if not hasattr(household, 'food_spending'):
+                    if not hasattr(household, "food_spending"):
                         household.food_spending = 0.0
-                    if not hasattr(household, 'total_spending'):
+                    if not hasattr(household, "total_spending"):
                         household.total_spending = 0.0
 
                     household.total_spending += txn.total_value
@@ -468,7 +468,9 @@ class Simulation:
         total_income_tax = 0.0
         for household in self.households:
             if household.profile.monthly_income > 0:
-                tax = self.government.collect_income_tax(household.profile.monthly_income)
+                tax = self.government.collect_income_tax(
+                    household.profile.monthly_income
+                )
                 total_income_tax += tax
                 # 世帯の現金から税金を差し引く
                 household.profile.cash = max(0.0, household.profile.cash - tax)
@@ -476,7 +478,7 @@ class Simulation:
         # 2. VAT徴収（取引総額から）
         total_vat = 0.0
         total_transactions = sum(
-            getattr(h, 'consumption', 0.0) for h in self.households
+            getattr(h, "consumption", 0.0) for h in self.households
         )
         if total_transactions > 0:
             total_vat = self.government.collect_vat(total_transactions)
@@ -494,13 +496,14 @@ class Simulation:
 
         # 5. 失業給付（Phase 9.9.4: Enum対応）
         from src.models.data_models import EmploymentStatus
+
         unemployment_expenditure = 0.0
         for household in self.households:
             if household.profile.employment_status == EmploymentStatus.UNEMPLOYED:
                 # 失業給付（前職賃金の50%、簡略版では月収の50%）
                 benefit = self.government.calculate_unemployment_benefit(
                     household.profile.monthly_income,
-                    months_unemployed=1  # 簡略版
+                    months_unemployed=1,  # 簡略版
                 )
                 unemployment_expenditure += benefit
                 household.profile.monthly_income += benefit
@@ -531,7 +534,9 @@ class Simulation:
         )
 
         # 8. 政府準備金を更新
-        budget_balance = self.government.state.tax_revenue - self.government.state.expenditure
+        budget_balance = (
+            self.government.state.tax_revenue - self.government.state.expenditure
+        )
         self.government.state.reserves += budget_balance
 
         logger.info(
@@ -567,12 +572,14 @@ class Simulation:
                     new_household = HouseholdAgent(
                         household_id=profile.id,
                         profile=profile,
-                        llm_interface=self.llm_interface
+                        llm_interface=self.llm_interface,
                     )
                     self.households.append(new_household)
                     self.state.households.append(profile)
 
-                logger.info(f"Metabolic: Added {new_count} new households (total: {len(self.households)})")
+                logger.info(
+                    f"Metabolic: Added {new_count} new households (total: {len(self.households)})"
+                )
 
     def _revision_stage(self):
         """
@@ -587,7 +594,7 @@ class Simulation:
         for firm in self.firms:
             # 価格を±5%でランダム調整
             adjustment = random.uniform(-0.05, 0.05)
-            firm.profile.price *= (1 + adjustment)
+            firm.profile.price *= 1 + adjustment
             firm.profile.price = max(1.0, firm.profile.price)  # 最低価格1.0
 
             # 解雇処理: 現金不足の場合に従業員を解雇
@@ -595,7 +602,7 @@ class Simulation:
                 # 解雇数 = 現金不足額を賃金でカバーできる人数（最低1人）
                 layoff_count = min(
                     len(firm.profile.employees),
-                    int(abs(firm.profile.cash) / firm.profile.wage_offered) + 1
+                    int(abs(firm.profile.cash) / firm.profile.wage_offered) + 1,
                 )
 
                 for _ in range(layoff_count):
@@ -607,9 +614,14 @@ class Simulation:
                         for household in self.households:
                             if household.profile.id == employee_id:
                                 from src.models.data_models import EmploymentStatus
-                                household.profile.employment_status = EmploymentStatus.UNEMPLOYED
+
+                                household.profile.employment_status = (
+                                    EmploymentStatus.UNEMPLOYED
+                                )
                                 household.profile.employer_id = None
-                                household.profile.monthly_income = 0.0  # Phase 9.9.2修正を維持
+                                household.profile.monthly_income = (
+                                    0.0  # Phase 9.9.2修正を維持
+                                )
                                 household.profile.wage = 0.0
                                 break
 
@@ -627,7 +639,9 @@ class Simulation:
                 firm.profile.job_openings = 0
 
         if total_layoffs > 0:
-            logger.info(f"Layoffs: {total_layoffs} employees laid off due to firm cash shortage")
+            logger.info(
+                f"Layoffs: {total_layoffs} employees laid off due to firm cash shortage"
+            )
 
         # 2. 労働市場マッチング
         # 求人を収集
@@ -639,12 +653,13 @@ class Simulation:
                     num_openings=firm.profile.job_openings,
                     wage_offered=firm.profile.wage_offered,
                     skill_requirements=firm.profile.skill_requirements,
-                    location=firm.profile.location
+                    location=firm.profile.location,
                 )
                 job_postings.append(posting)
 
         # 求職者を収集（失業者のみ）（Phase 9.9.4: Enum対応）
         from src.models.data_models import EmploymentStatus
+
         job_seekers = []
         for household in self.households:
             if household.profile.employment_status == EmploymentStatus.UNEMPLOYED:
@@ -658,7 +673,7 @@ class Simulation:
                     skills=household.profile.skills,
                     reservation_wage=reservation_wage,
                     location=household.profile.location,
-                    currently_employed=False
+                    currently_employed=False,
                 )
                 job_seekers.append(seeker)
 
@@ -679,15 +694,20 @@ class Simulation:
                 for household in self.households:
                     if household.profile.id == match.household_id:
                         from src.models.data_models import EmploymentStatus
+
                         household.profile.employment_status = EmploymentStatus.EMPLOYED
                         household.profile.monthly_income = match.wage
                         household.profile.employer_id = match.firm_id
                         household.profile.wage = match.wage
                         break
 
-            logger.info(f"Revision: {len(matches)} labor matches from {len(job_postings)} postings and {len(job_seekers)} seekers")
+            logger.info(
+                f"Revision: {len(matches)} labor matches from {len(job_postings)} postings and {len(job_seekers)} seekers"
+            )
         else:
-            logger.info(f"Revision: No labor matching ({len(job_postings)} postings, {len(job_seekers)} seekers)")
+            logger.info(
+                f"Revision: No labor matching ({len(job_postings)} postings, {len(job_seekers)} seekers)"
+            )
 
         # 3. 金融市場統合
         self._financial_stage()
@@ -702,7 +722,9 @@ class Simulation:
 
         # 1. 政策金利の更新
         if self.central_bank and self.central_bank.state:
-            self.financial_market.update_policy_rate(self.central_bank.state.policy_rate)
+            self.financial_market.update_policy_rate(
+                self.central_bank.state.policy_rate
+            )
 
         # 2. 世帯の預金申請を収集
         from src.environment.markets.financial_market import DepositRequest, LoanRequest
@@ -711,14 +733,15 @@ class Simulation:
         for household in self.households:
             # 余剰現金がある場合に預金（月収の2ヶ月分以上の現金）
             if household.profile.cash > household.profile.monthly_income * 2.0:
-                surplus = household.profile.cash - household.profile.monthly_income * 2.0
+                surplus = (
+                    household.profile.cash - household.profile.monthly_income * 2.0
+                )
                 deposit_amount = surplus * 0.5  # 余剰の50%を預金
 
                 if deposit_amount > 100.0:  # 最低預金額
                     deposit_requests.append(
                         DepositRequest(
-                            household_id=household.profile.id,
-                            amount=deposit_amount
+                            household_id=household.profile.id, amount=deposit_amount
                         )
                     )
 
@@ -727,7 +750,9 @@ class Simulation:
         for firm in self.firms:
             # 月次賃金総額を計算
             num_employees = len(firm.profile.employees)
-            monthly_wage_bill = num_employees * firm.profile.wage_offered if num_employees > 0 else 0.0
+            monthly_wage_bill = (
+                num_employees * firm.profile.wage_offered if num_employees > 0 else 0.0
+            )
 
             # 運転資金が不足している場合に借入（賃金総額の2ヶ月分未満）
             required_cash = monthly_wage_bill * 2.0
@@ -738,7 +763,7 @@ class Simulation:
                     LoanRequest(
                         firm_id=firm.profile.id,
                         amount=loan_amount,
-                        purpose="working_capital"
+                        purpose="working_capital",
                     )
                 )
 
@@ -804,6 +829,7 @@ class Simulation:
         total_labor_force = len(self.households)
         if total_labor_force > 0:
             from src.models.data_models import EmploymentStatus
+
             employed = sum(
                 1
                 for h in self.households
@@ -838,7 +864,9 @@ class Simulation:
 
         # 価格データから価格指数を計算
         current_prices = self.goods_market.get_market_prices()
-        logger.info(f"[Inflation] Step {self.state.step}: current_prices count = {len(current_prices)}")
+        logger.info(
+            f"[Inflation] Step {self.state.step}: current_prices count = {len(current_prices)}"
+        )
 
         # 基準年価格を設定（価格データがある最初のステップ）
         if self.base_year_prices is None and current_prices:
@@ -849,42 +877,60 @@ class Simulation:
         # 価格指数を計算（基準年価格と現在価格の両方がある場合のみ）
         if self.base_year_prices and current_prices:
             # 共通の財IDのみで計算
-            common_goods = set(current_prices.keys()) & set(self.base_year_prices.keys())
-            logger.info(f"[Inflation] common_goods = {common_goods} ({len(common_goods)} goods)")
+            common_goods = set(current_prices.keys()) & set(
+                self.base_year_prices.keys()
+            )
+            logger.info(
+                f"[Inflation] common_goods = {common_goods} ({len(common_goods)} goods)"
+            )
 
             if common_goods:
                 # 平均価格比で価格指数を計算
-                current_avg = sum(current_prices[g] for g in common_goods) / len(common_goods)
-                base_avg = sum(self.base_year_prices[g] for g in common_goods) / len(common_goods)
-                logger.info(f"[Inflation] current_avg={current_avg:.2f}, base_avg={base_avg:.2f}")
+                current_avg = sum(current_prices[g] for g in common_goods) / len(
+                    common_goods
+                )
+                base_avg = sum(self.base_year_prices[g] for g in common_goods) / len(
+                    common_goods
+                )
+                logger.info(
+                    f"[Inflation] current_avg={current_avg:.2f}, base_avg={base_avg:.2f}"
+                )
 
                 if base_avg > 0:
                     price_index = (current_avg / base_avg) * 100.0
-                    logger.info(f"[Inflation] price_index={price_index:.4f}, prev_price_index={self.prev_price_index}")
+                    logger.info(
+                        f"[Inflation] price_index={price_index:.4f}, prev_price_index={self.prev_price_index}"
+                    )
 
                     # 実質GDP = 名目GDP / (価格指数 / 100)
                     real_gdp = gdp / (price_index / 100.0)
 
                     # インフレ率を価格指数から計算
                     if self.prev_price_index is not None and self.prev_price_index > 0:
-                        inflation = (price_index - self.prev_price_index) / self.prev_price_index
-                        logger.info(f"[Inflation] CALCULATED: inflation={inflation:.6f} ({inflation*100:.4f}%)")
+                        inflation = (
+                            price_index - self.prev_price_index
+                        ) / self.prev_price_index
+                        logger.info(
+                            f"[Inflation] CALCULATED: inflation={inflation:.6f} ({inflation * 100:.4f}%)"
+                        )
                     else:
                         # 初回ステップ（base_year設定時）はインフレ率0
                         inflation = 0.0
-                        logger.info(f"[Inflation] First step: inflation=0.0 (expected)")
+                        logger.info("[Inflation] First step: inflation=0.0 (expected)")
 
                     # 次のステップのために現在の価格指数を保存
                     self.prev_price_index = price_index
                 else:
                     logger.warning(f"[Inflation] base_avg <= 0: {base_avg}")
             else:
-                logger.warning(f"[Inflation] No common goods between base_year and current prices!")
+                logger.warning(
+                    "[Inflation] No common goods between base_year and current prices!"
+                )
         else:
             if not self.base_year_prices:
-                logger.info(f"[Inflation] No base_year_prices yet")
+                logger.info("[Inflation] No base_year_prices yet")
             if not current_prices:
-                logger.warning(f"[Inflation] No current_prices available!")
+                logger.warning("[Inflation] No current_prices available!")
 
         return {
             "gdp": gdp,
@@ -926,8 +972,8 @@ class Simulation:
         # 全世帯分を記録（取引がない世帯は0.0）
         food_expenditure_ratios = []
         for household in self.households:
-            total_spending = getattr(household, 'total_spending', 0.0)
-            food_spending = getattr(household, 'food_spending', 0.0)
+            total_spending = getattr(household, "total_spending", 0.0)
+            food_spending = getattr(household, "food_spending", 0.0)
 
             if total_spending > 0:
                 ratio = food_spending / total_spending
@@ -1179,7 +1225,7 @@ class Simulation:
                 new_household = HouseholdAgent(
                     household_id=profile.id,
                     profile=profile,
-                    llm_interface=self.llm_interface
+                    llm_interface=self.llm_interface,
                 )
                 self.households.append(new_household)
                 self.state.households.append(profile)

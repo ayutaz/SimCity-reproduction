@@ -9,7 +9,7 @@ Firm Agent for SimCity Simulation
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from loguru import logger
 
@@ -17,6 +17,9 @@ from src.agents.base_agent import BaseAgent, load_prompt_template
 from src.llm.llm_interface import LLMInterface
 from src.models.data_models import FirmProfile, GoodCategory
 from src.models.economic_models import ProductionFunction
+
+if TYPE_CHECKING:
+    from src.agents.household import HouseholdAgent
 
 
 class FirmAgent(BaseAgent):
@@ -262,7 +265,9 @@ Location: {self.profile.location}
             },
         }
 
-    def calculate_production_capacity(self, households: list["HouseholdAgent"]) -> float:
+    def calculate_production_capacity(
+        self, households: list["HouseholdAgent"]
+    ) -> float:
         """
         現在の生産能力を計算（Cobb-Douglas）
 
@@ -300,7 +305,10 @@ Location: {self.profile.location}
             else:
                 # 各要求スキルについてマッチング度を計算
                 match_scores = []
-                for skill_name, required_level in self.profile.skill_requirements.items():
+                for (
+                    skill_name,
+                    required_level,
+                ) in self.profile.skill_requirements.items():
                     employee_level = employee.profile.skills.get(skill_name, 0.0)
 
                     if required_level > 0:

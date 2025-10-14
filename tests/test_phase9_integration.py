@@ -5,7 +5,6 @@ Phase 9.1-9.4で実装した機能の統合テスト
 """
 
 import os
-from pathlib import Path
 
 import pytest
 
@@ -46,11 +45,13 @@ class TestFirmInitialization:
 
         for firm in simulation.firms:
             # FirmAgentの必須属性が存在するか確認
-            assert hasattr(firm, 'profile'), "Firm missing profile"
-            assert hasattr(firm.profile, 'id'), "Firm profile missing id"
-            assert hasattr(firm.profile, 'name'), "Firm profile missing name"
-            assert hasattr(firm.profile, 'goods_type'), "Firm profile missing goods_type"
-            assert hasattr(firm.profile, 'cash'), "Firm profile missing cash"
+            assert hasattr(firm, "profile"), "Firm missing profile"
+            assert hasattr(firm.profile, "id"), "Firm profile missing id"
+            assert hasattr(firm.profile, "name"), "Firm profile missing name"
+            assert hasattr(firm.profile, "goods_type"), (
+                "Firm profile missing goods_type"
+            )
+            assert hasattr(firm.profile, "cash"), "Firm profile missing cash"
 
     def test_firm_templates_loaded(self, simulation):
         """企業テンプレートが正常に読み込まれることを確認"""
@@ -83,9 +84,6 @@ class TestSingleStepExecution:
 
     def test_four_stages_executed(self, simulation):
         """4つのステージすべてが実行されることを確認"""
-        # 初期状態
-        initial_gdp = simulation._calculate_indicators()["gdp"]
-
         # 1ステップ実行
         simulation.step()
 
@@ -131,9 +129,7 @@ class TestMultiStepExecution:
             unemployment_values.append(indicators["unemployment_rate"])
 
         # GDPが変化していることを確認（すべて同じ値ではない）
-        assert len(set(gdp_values)) > 1, (
-            f"GDP did not change: {gdp_values}"
-        )
+        assert len(set(gdp_values)) > 1, f"GDP did not change: {gdp_values}"
 
         # GDPは正の値
         assert all(gdp > 0 for gdp in gdp_values), "GDP should always be positive"
@@ -175,7 +171,9 @@ class TestPriceAndDemandTracking:
 
         # 各財について価格履歴が存在することを確認
         for good_id, price_history in prices.items():
-            assert isinstance(price_history, list), f"Price history for {good_id} is not a list"
+            assert isinstance(price_history, list), (
+                f"Price history for {good_id} is not a list"
+            )
             assert len(price_history) > 0, f"No price history for {good_id}"
 
     def test_demands_recorded(self, simulation):
@@ -191,7 +189,9 @@ class TestPriceAndDemandTracking:
 
         # 各財について需要履歴が存在することを確認
         for good_id, demand_history in demands.items():
-            assert isinstance(demand_history, list), f"Demand history for {good_id} is not a list"
+            assert isinstance(demand_history, list), (
+                f"Demand history for {good_id} is not a list"
+            )
             assert len(demand_history) > 0, f"No demand history for {good_id}"
 
 
@@ -234,9 +234,9 @@ class TestFoodExpenditureRatio:
         if non_zero_ratios:
             # 0.2のみでないことを確認
             unique_ratios = set(non_zero_ratios)
-            assert len(unique_ratios) > 1 or (len(unique_ratios) == 1 and 0.2 not in unique_ratios), (
-                f"All non-zero ratios are 0.2: {non_zero_ratios}"
-            )
+            assert len(unique_ratios) > 1 or (
+                len(unique_ratios) == 1 and 0.2 not in unique_ratios
+            ), f"All non-zero ratios are 0.2: {non_zero_ratios}"
 
 
 class TestRealGDP:
@@ -251,7 +251,9 @@ class TestRealGDP:
         real_gdp = simulation.state.history.get("real_gdp", [])
         nominal_gdp = simulation.state.history.get("gdp", [])
 
-        assert len(real_gdp) == len(nominal_gdp), "Real GDP and nominal GDP lengths differ"
+        assert len(real_gdp) == len(nominal_gdp), (
+            "Real GDP and nominal GDP lengths differ"
+        )
         assert len(real_gdp) > 0, "No real GDP recorded"
 
     def test_real_gdp_not_same_as_nominal(self, simulation):
@@ -267,7 +269,9 @@ class TestRealGDP:
         # ステップ0は基準年なので同じ値
         if len(real_gdp) > 1:
             # 少なくとも1つは異なる値があることを期待
-            differences = [abs(r - n) for r, n in zip(real_gdp[1:], nominal_gdp[1:])]
+            differences = [
+                abs(r - n) for r, n in zip(real_gdp[1:], nominal_gdp[1:], strict=False)
+            ]
 
             # 価格変動がある場合は差が生じる
             # 価格が全く変わらない場合は差が0になる可能性もあるが、
@@ -280,7 +284,9 @@ class TestRealGDP:
 class TestValidationSystem:
     """検証システムテスト（Phase 9.4）"""
 
-    @pytest.mark.xfail(reason="Validation system requires full economic data (vacancy_rate, etc.)")
+    @pytest.mark.xfail(
+        reason="Validation system requires full economic data (vacancy_rate, etc.)"
+    )
     def test_validation_system_runs(self, simulation):
         """EconomicPhenomenaValidator.validate_all()が実行可能"""
         from experiments.validation import EconomicPhenomenaValidator
@@ -296,7 +302,7 @@ class TestValidationSystem:
                 "steps": simulation.state.step,
                 "households": len(simulation.households),
                 "firms": len(simulation.firms),
-            }
+            },
         }
         validator = EconomicPhenomenaValidator(simulation_data)
 
@@ -327,7 +333,7 @@ class TestValidationSystem:
                 "steps": simulation.state.step,
                 "households": len(simulation.households),
                 "firms": len(simulation.firms),
-            }
+            },
         }
         validator = EconomicPhenomenaValidator(simulation_data)
 
@@ -351,11 +357,11 @@ class TestValidationSystem:
                 result = method()
                 assert isinstance(result, dict), f"{phenomenon} should return a dict"
                 passed_count += 1
-            except (ValueError, ZeroDivisionError, KeyError, IndexError) as e:
+            except (ValueError, ZeroDivisionError, KeyError, IndexError):
                 # データ不足の現象はスキップ
                 skipped_count += 1
                 continue
-            except Exception as e:
+            except Exception:
                 # 予期しないエラーもスキップ
                 skipped_count += 1
                 continue
@@ -387,10 +393,10 @@ class TestRegressionTests:
         assert sim is not None
 
         # 基本的な属性が存在することを確認
-        assert hasattr(sim, 'households')
-        assert hasattr(sim, 'firms')
-        assert hasattr(sim, 'government')
-        assert hasattr(sim, 'central_bank')
-        assert hasattr(sim, 'labor_market')
-        assert hasattr(sim, 'goods_market')
-        assert hasattr(sim, 'financial_market')
+        assert hasattr(sim, "households")
+        assert hasattr(sim, "firms")
+        assert hasattr(sim, "government")
+        assert hasattr(sim, "central_bank")
+        assert hasattr(sim, "labor_market")
+        assert hasattr(sim, "goods_market")
+        assert hasattr(sim, "financial_market")

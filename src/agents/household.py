@@ -541,7 +541,9 @@ class HouseholdProfileGenerator:
         employment_status = EmploymentStatus.UNEMPLOYED
         employer_id = None
         wage = 0.0
-        monthly_income = 0.0  # 失業中は収入なし（reservation_wage計算で最低希望賃金1000になる）
+        monthly_income = (
+            0.0  # 失業中は収入なし（reservation_wage計算で最低希望賃金1000になる）
+        )
 
         # 消費嗜好（ランダム、合計が1になるように正規化）
         preferences = {}

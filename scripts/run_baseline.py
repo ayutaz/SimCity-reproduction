@@ -201,7 +201,9 @@ def run_simulation(config, steps: int, output_dir: Path, checkpoint_interval: in
     logger.info("\nSaving results...")
 
     # simulation.state.historyから食料支出比率と価格・需要データをマージ
-    history["food_expenditure_ratios"] = sim.state.history.get("food_expenditure_ratios", [])
+    history["food_expenditure_ratios"] = sim.state.history.get(
+        "food_expenditure_ratios", []
+    )
     history["prices"] = sim.state.history.get("prices", {})
     history["demands"] = sim.state.history.get("demands", {})
 
@@ -327,9 +329,7 @@ def generate_visualizations(results: dict, output_dir: Path):
         "Inflation": history["inflation"],
         "Gini": history["gini"],
     }
-    fig = plotter.plot_time_series(
-        economic_data, title="Economic Indicators Over Time"
-    )
+    fig = plotter.plot_time_series(economic_data, title="Economic Indicators Over Time")
     plt.savefig(viz_dir / "economic_indicators.png", dpi=300, bbox_inches="tight")
     plt.close(fig)
     logger.info(f"  Saved: {viz_dir / 'economic_indicators.png'}")

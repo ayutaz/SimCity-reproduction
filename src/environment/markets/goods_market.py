@@ -97,7 +97,9 @@ class GoodsMarket:
         self.unsold_supply: dict[str, float] = {}  # 財IDごとの未売却在庫
 
         # 取引履歴（価格追跡用）
-        self.recent_transactions: dict[str, list[float]] = {}  # 財IDごとの直近取引価格リスト
+        self.recent_transactions: dict[
+            str, list[float]
+        ] = {}  # 財IDごとの直近取引価格リスト
         self.recent_demands: dict[str, float] = {}  # 財IDごとの直近需要量
 
         logger.info(
@@ -149,7 +151,9 @@ class GoodsMarket:
                 for txn in good_transactions:
                     self.recent_transactions[good_id].append(txn.price)
                 # 最新10件のみ保持
-                self.recent_transactions[good_id] = self.recent_transactions[good_id][-10:]
+                self.recent_transactions[good_id] = self.recent_transactions[good_id][
+                    -10:
+                ]
 
             # 未充足需要と未売却在庫を記録
             total_supplied = sum(listing.quantity for listing in good_listings)
