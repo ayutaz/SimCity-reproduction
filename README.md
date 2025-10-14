@@ -147,7 +147,8 @@ openai:
 - **OpenAI API**（gpt-4o-mini）
 - **Streamlit**（ダッシュボード）
 - **NumPy / Pandas / SciPy**（データ処理）
-- **Pytest**（テスト: 189件、カバレッジ72%）
+- **Pytest**（テスト: 207件、カバレッジ88%）
+- **Ruff**（コード品質: 100%準拠）
 
 ## 貢献
 
