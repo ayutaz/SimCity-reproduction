@@ -27,7 +27,12 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:api.github.com)",
       "Bash(gh run list:*)",
-      "Bash(gh run view:*)"
+      "Bash(gh run view:*)",
+      "Bash(if not exist .env copy .env.example .env)",
+      "Bash(if [ ! -f .env ])",
+      "Bash(then cp .env.example .env)",
+      "Bash(else echo \".env file already exists\")",
+      "Bash(fi)"
     ],
     "deny": [],
     "ask": []

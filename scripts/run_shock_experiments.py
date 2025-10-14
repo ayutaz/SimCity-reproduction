@@ -27,6 +27,8 @@ import sys
 import time
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -442,6 +444,9 @@ def generate_shock_visualization(results: dict, output_dir: Path):
 
 def main():
     """メイン関数"""
+    # .envファイルを読み込む
+    load_dotenv()
+
     args = parse_args()
 
     # デフォルトの出力ディレクトリ
