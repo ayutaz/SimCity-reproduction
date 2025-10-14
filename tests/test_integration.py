@@ -30,7 +30,7 @@ from src.environment.markets.goods_market import GoodListing, GoodOrder, GoodsMa
 from src.environment.markets.labor_market import JobPosting, JobSeeker, LaborMarket
 from src.environment.simulation import Simulation
 from src.models.data_models import EmploymentStatus, FirmProfile
-from src.utils.config import SimCityConfig
+from src.utils.config import load_config
 
 
 class TestMarketIntegration:
@@ -256,7 +256,7 @@ class TestSimulationExecution:
     def config(self):
         """Create test simulation config"""
         config_path = Path(__file__).parent.parent / "config" / "simulation_config.yaml"
-        return SimCityConfig(config_path=str(config_path))
+        return load_config(config_path)
 
     @pytest.fixture
     def simulation_with_data(self, config):
@@ -387,7 +387,7 @@ class TestStatePersistence:
     def config(self):
         """Create test config"""
         config_path = Path(__file__).parent.parent / "config" / "simulation_config.yaml"
-        return SimCityConfig(config_path=str(config_path))
+        return load_config(config_path)
 
     @pytest.fixture
     def simulation_with_data(self, config):

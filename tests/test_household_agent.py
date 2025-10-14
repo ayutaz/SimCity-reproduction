@@ -166,7 +166,7 @@ class TestHouseholdAgent:
 
     def test_agent_initialization(self, sample_profile, mock_llm):
         """エージェント初期化のテスト"""
-        agent = HouseholdAgent(sample_profile, mock_llm)
+        agent = HouseholdAgent(profile=sample_profile, llm_interface=mock_llm)
 
         assert agent.agent_id == f"household_{sample_profile.id}"
         assert agent.agent_type == "household"
@@ -176,7 +176,7 @@ class TestHouseholdAgent:
 
     def test_get_profile_str(self, sample_profile, mock_llm):
         """プロフィール文字列生成のテスト"""
-        agent = HouseholdAgent(sample_profile, mock_llm)
+        agent = HouseholdAgent(profile=sample_profile, llm_interface=mock_llm)
         profile_str = agent.get_profile_str()
 
         # 必須情報が含まれているか
@@ -188,7 +188,7 @@ class TestHouseholdAgent:
 
     def test_get_available_actions(self, sample_profile, mock_llm):
         """利用可能な行動リストのテスト"""
-        agent = HouseholdAgent(sample_profile, mock_llm)
+        agent = HouseholdAgent(profile=sample_profile, llm_interface=mock_llm)
         actions = agent.get_available_actions()
 
         # 5つの行動が定義されているか
@@ -215,7 +215,7 @@ class TestHouseholdAgent:
     def test_fallback_action_unemployed(self, sample_profile, mock_llm):
         """失業中のフォールバック行動テスト"""
         sample_profile.employment_status = EmploymentStatus.UNEMPLOYED
-        agent = HouseholdAgent(sample_profile, mock_llm)
+        agent = HouseholdAgent(profile=sample_profile, llm_interface=mock_llm)
 
         observation = {"market_state": {}}
         fallback = agent._get_fallback_action(observation)
@@ -226,7 +226,7 @@ class TestHouseholdAgent:
     def test_fallback_action_employed(self, sample_profile, mock_llm):
         """雇用中のフォールバック行動テスト"""
         sample_profile.employment_status = EmploymentStatus.EMPLOYED
-        agent = HouseholdAgent(sample_profile, mock_llm)
+        agent = HouseholdAgent(profile=sample_profile, llm_interface=mock_llm)
 
         observation = {"market_state": {}}
         fallback = agent._get_fallback_action(observation)
@@ -236,7 +236,7 @@ class TestHouseholdAgent:
 
     def test_decide_primary_action(self, sample_profile, mock_llm):
         """意思決定のテスト"""
-        agent = HouseholdAgent(sample_profile, mock_llm)
+        agent = HouseholdAgent(profile=sample_profile, llm_interface=mock_llm)
 
         observation = {
             "step": 1,
@@ -255,7 +255,7 @@ class TestHouseholdAgent:
 
     def test_update_profile(self, sample_profile, mock_llm):
         """プロフィール更新のテスト"""
-        agent = HouseholdAgent(sample_profile, mock_llm)
+        agent = HouseholdAgent(profile=sample_profile, llm_interface=mock_llm)
 
         original_cash = sample_profile.cash
         original_age = sample_profile.age
@@ -275,7 +275,7 @@ class TestHouseholdAgent:
 
     def test_memory_management(self, sample_profile, mock_llm):
         """メモリ管理のテスト"""
-        agent = HouseholdAgent(sample_profile, mock_llm)
+        agent = HouseholdAgent(profile=sample_profile, llm_interface=mock_llm)
 
         observation = {"step": 1}
 

@@ -25,7 +25,7 @@ from src.models.data_models import (
     SimulationState,
 )
 from src.models.economic_models import MacroeconomicIndicators
-from src.utils.config import SimCityConfig
+from src.utils.config import SimCityConfig, get_api_key
 
 
 class Simulation:
@@ -60,12 +60,12 @@ class Simulation:
         self.state.step = 0
         self.state.phase = "move_in"
 
-        # LLMインターフェースの初期化
+        # LLMインターフェースの初期化（環境変数から直接取得）
         llm_config = {
-            "api_key": self.config.llm.openai.api_key,
-            "model": self.config.llm.openai.model,
-            "temperature": self.config.llm.openai.temperature,
-            "max_tokens": self.config.llm.openai.max_tokens,
+            "api_key": get_api_key("OPENAI_API_KEY"),
+            "model": "gpt-4o-mini",
+            "temperature": 0.7,
+            "max_tokens": 2000,
         }
         self.llm_interface = LLMInterface(llm_config)
 
