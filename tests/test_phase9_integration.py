@@ -281,7 +281,15 @@ class TestValidationSystem:
             simulation.step()
 
         # 検証システムを実行
-        validator = EconomicPhenomenaValidator(simulation.state.history)
+        simulation_data = {
+            "history": simulation.state.history,
+            "metadata": {
+                "steps": simulation.state.step,
+                "households": len(simulation.households),
+                "firms": len(simulation.firms),
+            }
+        }
+        validator = EconomicPhenomenaValidator(simulation_data)
 
         # エラーなく実行できることを確認
         # データ不足の場合はスキップ
@@ -303,7 +311,16 @@ class TestValidationSystem:
         for _ in range(30):
             simulation.step()
 
-        validator = EconomicPhenomenaValidator(simulation.state.history)
+        # 検証システムが期待する形式でデータを渡す
+        simulation_data = {
+            "history": simulation.state.history,
+            "metadata": {
+                "steps": simulation.state.step,
+                "households": len(simulation.households),
+                "firms": len(simulation.firms),
+            }
+        }
+        validator = EconomicPhenomenaValidator(simulation_data)
 
         # 各検証メソッドがエラーなく実行できることを確認
         phenomena = [
