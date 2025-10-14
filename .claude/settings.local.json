@@ -17,7 +17,11 @@
       "Bash(uv run pytest:*)",
       "Bash(uv pip install:*)",
       "Bash(uv run ruff:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(uv run:*)",
+      "Bash(dir:*)",
+      "Bash(findstr:*)",
+      "Bash(if not exist experiments mkdir experiments)"
     ],
     "deny": [],
     "ask": []

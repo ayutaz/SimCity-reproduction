@@ -31,6 +31,7 @@ class BaseAgent(ABC):
         llm_interface: LLMInterface,
         system_prompt: str,
         memory_size: int = 5,
+        decision_frequencies: dict[str, int] | None = None,
     ):
         """
         Args:
@@ -39,6 +40,7 @@ class BaseAgent(ABC):
             llm_interface: LLMインターフェース
             system_prompt: システムプロンプト
             memory_size: 保持する過去の行動数
+            decision_frequencies: 決定頻度の辞書 {"decision_name": frequency_steps}
         """
         self.agent_id = agent_id
         self.agent_type = agent_type
@@ -51,6 +53,10 @@ class BaseAgent(ABC):
 
         # エージェント固有の属性（サブクラスで設定）
         self.attributes: dict[str, Any] = {}
+
+        # 決定頻度の設定（Phase 7.3.1: 最適化）
+        self.decision_frequencies = decision_frequencies or {}
+        self.last_decision_steps: dict[str, int] = {}
 
         logger.info(f"Agent {agent_id} ({agent_type}) initialized")
 
@@ -260,6 +266,33 @@ Consider your profile, past actions, and current observation to make a rational 
         """
         if self.memory:
             self.memory[-1]["result"] = result
+
+    def should_make_decision(self, decision_name: str, current_step: int) -> bool:
+        """
+        特定の決定を行うべきかどうかを判断（Phase 7.3.1: 最適化）
+
+        Args:
+            decision_name: 決定の名前
+            current_step: 現在のステップ
+
+        Returns:
+            決定を行うべきならTrue
+        """
+        # 決定頻度が設定されていない場合は常に決定を行う
+        if decision_name not in self.decision_frequencies:
+            return True
+
+        frequency = self.decision_frequencies[decision_name]
+
+        # 最後に決定を行ったステップを取得
+        last_step = self.last_decision_steps.get(decision_name, -frequency)
+
+        # 頻度に基づいて判断
+        if current_step - last_step >= frequency:
+            self.last_decision_steps[decision_name] = current_step
+            return True
+
+        return False
 
 
 def load_prompt_template(template_path: str | Path) -> str:

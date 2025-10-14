@@ -9,6 +9,14 @@ from pathlib import Path
 
 from loguru import logger
 
+from src.agents.central_bank import CentralBankAgent
+from src.agents.firm import FirmAgent
+from src.agents.government import GovernmentAgent
+from src.agents.household import HouseholdAgent, HouseholdProfileGenerator
+from src.environment.markets.financial_market import FinancialMarket
+from src.environment.markets.goods_market import GoodsMarket
+from src.environment.markets.labor_market import LaborMarket
+from src.llm.llm_interface import LLMInterface
 from src.models.data_models import (
     CentralBankState,
     FirmProfile,
@@ -53,16 +61,95 @@ class Simulation:
         self.state.step = 0
         self.state.phase = "move_in"
 
-        # 政府と中央銀行の初期化
-        self.state.government = GovernmentState(
+        # LLMインターフェースの初期化
+        llm_config = {
+            "api_key": self.config.llm.openai.api_key,
+            "model": self.config.llm.openai.model,
+            "temperature": self.config.llm.openai.temperature,
+            "max_tokens": self.config.llm.openai.max_tokens,
+        }
+        self.llm_interface = LLMInterface(llm_config)
+
+        # エージェントの初期化
+        self._initialize_agents()
+
+        # 市場の初期化
+        self._initialize_markets()
+
+        # 履歴の初期化
+        self.state.history = {
+            "gdp": [],
+            "real_gdp": [],
+            "inflation": [],
+            "unemployment_rate": [],
+            "gini": [],
+            "policy_rate": [],
+            "num_households": [],
+            "num_firms": [],
+            "vacancy_rate": [],
+            "consumption": [],
+            "investment": [],
+            "household_incomes": [],
+            "food_expenditure_ratios": [],
+            "prices": {},
+            "demands": {},
+        }
+
+        logger.info("State initialized")
+
+    def _initialize_agents(self):
+        """エージェントの初期化"""
+        logger.info("Initializing agents...")
+
+        # 世帯エージェントの初期化
+        household_data_file = Path("data/initial_households.json")
+        if household_data_file.exists():
+            # データファイルから読み込み
+            with open(household_data_file, encoding="utf-8") as f:
+                household_profiles = json.load(f)
+
+            self.households = [
+                HouseholdAgent(
+                    household_id=profile["household_id"],
+                    profile=HouseholdProfile(**profile),
+                    llm_interface=self.llm_interface,
+                )
+                for profile in household_profiles[:self.config.agents.households.initial_count]
+            ]
+        else:
+            # プロファイルを生成
+            generator = HouseholdProfileGenerator(random_seed=self.config.simulation.random_seed)
+            profiles = generator.generate(count=self.config.agents.households.initial_count)
+
+            self.households = [
+                HouseholdAgent(
+                    household_id=profile.household_id,
+                    profile=profile,
+                    llm_interface=self.llm_interface,
+                )
+                for profile in profiles
+            ]
+
+        # 企業エージェントの初期化（簡略版）
+        self.firms = []
+        # TODO: 企業テンプレートから企業を生成
+
+        # 政府エージェントの初期化
+        gov_state = GovernmentState(
             income_tax_brackets=self.config.economy.taxation.income_tax_brackets,
             vat_rate=self.config.economy.taxation.vat_rate,
             ubi_enabled=self.config.economy.welfare.ubi_enabled,
             ubi_amount=self.config.economy.welfare.ubi_amount,
             unemployment_benefit_rate=self.config.economy.welfare.unemployment_benefit_rate,
         )
+        self.government = GovernmentAgent(
+            agent_id="government",
+            initial_state=gov_state,
+            llm_interface=self.llm_interface,
+        )
 
-        self.state.central_bank = CentralBankState(
+        # 中央銀行エージェントの初期化
+        cb_state = CentralBankState(
             policy_rate=self.config.economy.financial.initial_interest_rate,
             smoothing_factor=self.config.economy.financial.interest_rate_smoothing,
             natural_rate=self.config.economy.financial.taylor_rule.natural_rate,
@@ -70,22 +157,36 @@ class Simulation:
             taylor_alpha=self.config.economy.financial.taylor_rule.inflation_coefficient,
             taylor_beta=self.config.economy.financial.taylor_rule.output_coefficient,
         )
+        self.central_bank = CentralBankAgent(
+            agent_id="central_bank",
+            initial_state=cb_state,
+            llm_interface=self.llm_interface,
+        )
+
+        # SimulationStateに設定
+        self.state.households = [h.profile for h in self.households]
+        self.state.firms = []
+        self.state.government = gov_state
+        self.state.central_bank = cb_state
+
+        logger.info(f"Agents initialized: {len(self.households)} households, {len(self.firms)} firms")
+
+    def _initialize_markets(self):
+        """市場の初期化"""
+        logger.info("Initializing markets...")
+
+        # 労働市場
+        self.labor_market = LaborMarket(config=self.config.markets.labor.model_dump())
+
+        # 財市場
+        self.goods_market = GoodsMarket(config=self.config.markets.goods.model_dump())
+
+        # 金融市場
+        self.financial_market = FinancialMarket(config=self.config.markets.financial.model_dump())
 
         self.state.market = MarketState()
 
-        # 履歴の初期化
-        self.state.history = {
-            "gdp": [],
-            "real_gdp": [],
-            "inflation": [],
-            "unemployment": [],
-            "gini": [],
-            "policy_rate": [],
-            "num_households": [],
-            "num_firms": [],
-        }
-
-        logger.info("State initialized")
+        logger.info("Markets initialized")
 
     def step(self) -> dict[str, float]:
         """
@@ -178,21 +279,31 @@ class Simulation:
             指標の辞書
         """
         # 家計所得の集計
-        household_incomes = [h.monthly_income for h in self.state.households]
+        if self.households:
+            household_incomes = [
+                getattr(h.profile, "monthly_income", 50000.0) for h in self.households
+            ]
+        else:
+            household_incomes = []
 
-        # 企業産出の集計
-        firm_outputs = [f.production_quantity * f.price for f in self.state.firms]
+        # 企業産出の集計（簡略版）
+        if self.firms:
+            firm_outputs = [
+                getattr(f.profile, "production_quantity", 0) * getattr(f.profile, "price", 100.0)
+                for f in self.firms
+            ]
+        else:
+            firm_outputs = []
 
-        # GDP計算
-        gdp = MacroeconomicIndicators.calculate_gdp(
-            household_incomes,
-            firm_outputs,
-            self.state.government.expenditure if self.state.government else 0.0,
-        )
+        # GDP計算（簡略版）
+        total_consumption = sum(getattr(h, "consumption", 5000.0) for h in self.households)
+        total_investment = sum(getattr(f, "investment", 10000.0) for f in self.firms)
+        government_spending = getattr(self.government.state, "expenditure", 0.0) if self.government else 0.0
+
+        gdp = total_consumption + total_investment + government_spending
 
         # インフレ率計算（前期との比較）
         if len(self.state.history.get("gdp", [])) > 0:
-            # 簡略化: GDP deflatorを使用
             prev_gdp = self.state.history["gdp"][-1]
             if prev_gdp > 0:
                 inflation = (gdp - prev_gdp) / prev_gdp
@@ -202,26 +313,31 @@ class Simulation:
             inflation = 0.0
 
         # 失業率計算
-        total_labor_force = len(self.state.households)
-        employed = sum(
-            1
-            for h in self.state.households
-            if h.employment_status.value == "employed"
-        )
-        unemployment_rate = MacroeconomicIndicators.calculate_unemployment_rate(
-            total_labor_force, employed
-        )
+        total_labor_force = len(self.households)
+        if total_labor_force > 0:
+            employed = sum(
+                1 for h in self.households
+                if getattr(h.profile, "employment_status", "unemployed") == "employed"
+            )
+            unemployment_rate = (total_labor_force - employed) / total_labor_force
+        else:
+            unemployment_rate = 0.0
 
         # Gini係数
-        incomes = [h.monthly_income for h in self.state.households]
-        gini = MacroeconomicIndicators.calculate_gini_coefficient(incomes)
+        if household_incomes:
+            gini = MacroeconomicIndicators.calculate_gini_coefficient(household_incomes)
+        else:
+            gini = 0.0
 
         # 政府の状態更新
-        if self.state.government:
-            self.state.government.gdp = gdp
-            self.state.government.inflation_rate = inflation
-            self.state.government.unemployment_rate = unemployment_rate
-            self.state.government.gini_coefficient = gini
+        if self.government and self.government.state:
+            self.government.state.gdp = gdp
+            self.government.state.inflation_rate = inflation
+            self.government.state.unemployment_rate = unemployment_rate
+            self.government.state.gini_coefficient = gini
+
+        # 中央銀行の状態更新
+        policy_rate = self.central_bank.state.policy_rate if self.central_bank and self.central_bank.state else 0.02
 
         return {
             "gdp": gdp,
@@ -229,11 +345,9 @@ class Simulation:
             "inflation": inflation,
             "unemployment_rate": unemployment_rate,
             "gini": gini,
-            "policy_rate": (
-                self.state.central_bank.policy_rate if self.state.central_bank else 0.0
-            ),
-            "num_households": len(self.state.households),
-            "num_firms": len(self.state.firms),
+            "policy_rate": policy_rate,
+            "num_households": len(self.households),
+            "num_firms": len(self.firms),
         }
 
     def _record_history(self, indicators: dict[str, float]):
@@ -314,6 +428,86 @@ class Simulation:
             指標の辞書
         """
         return self._calculate_indicators()
+
+    def get_metrics(self) -> dict[str, float]:
+        """
+        現在のマクロ経済指標を取得（get_indicators()のエイリアス）
+
+        Returns:
+            指標の辞書
+        """
+        indicators = self._calculate_indicators()
+
+        # スクリプトが期待する追加のメトリクス
+        if self.households:
+            household_incomes = [
+                getattr(h.profile, "monthly_income", 50000.0) for h in self.households
+            ]
+            indicators["average_income"] = sum(household_incomes) / len(household_incomes)
+        else:
+            indicators["average_income"] = 0.0
+
+        indicators["total_consumption"] = sum(
+            getattr(h, "consumption", 5000.0) for h in self.households
+        )
+        indicators["total_investment"] = sum(
+            getattr(f, "investment", 10000.0) for f in self.firms
+        )
+        indicators["vacancy_rate"] = getattr(self.state.market, "vacancy_rate", 0.03) if self.state.market else 0.03
+        indicators["government_spending"] = (
+            getattr(self.government.state, "expenditure", 0.0) if self.government and self.government.state else 0.0
+        )
+        indicators["tax_revenue"] = (
+            getattr(self.government.state, "tax_revenue", 0.0) if self.government and self.government.state else 0.0
+        )
+
+        return indicators
+
+    def save_results(self, output_dir: str | Path):
+        """
+        シミュレーション結果を保存
+
+        Args:
+            output_dir: 出力ディレクトリパス
+        """
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        # 結果の構築
+        results = {
+            "history": self.state.history,
+            "metadata": {
+                "steps": self.state.step,
+                "households": len(self.state.households),
+                "firms": len(self.state.firms),
+                "seed": self.config.simulation.random_seed,
+                "phase": self.state.phase,
+            }
+        }
+
+        # results.jsonの保存
+        results_file = output_dir / "results.json"
+        with open(results_file, "w", encoding="utf-8") as f:
+            json.dump(results, f, indent=2, ensure_ascii=False)
+
+        logger.info(f"Results saved to {results_file}")
+
+        # サマリーの保存
+        if self.state.history.get("gdp"):
+            summary = {
+                "final_gdp": self.state.history["gdp"][-1],
+                "final_unemployment": self.state.history.get("unemployment", [0])[-1],
+                "final_inflation": self.state.history.get("inflation", [0])[-1],
+                "final_gini": self.state.history.get("gini", [0])[-1],
+                "avg_gdp": sum(self.state.history["gdp"]) / len(self.state.history["gdp"]),
+                "steps": self.state.step,
+            }
+
+            summary_file = output_dir / "summary.json"
+            with open(summary_file, "w", encoding="utf-8") as f:
+                json.dump(summary, f, indent=2, ensure_ascii=False)
+
+            logger.info(f"Summary saved to {summary_file}")
 
     def run(self, steps: int) -> list[dict[str, float]]:
         """

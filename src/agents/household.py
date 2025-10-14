@@ -39,16 +39,22 @@ class HouseholdAgent(BaseAgent):
 
     def __init__(
         self,
-        profile: HouseholdProfile,
-        llm_interface: LLMInterface,
+        household_id: str | None = None,
+        profile: HouseholdProfile | None = None,
+        llm_interface: LLMInterface | None = None,
         prompt_template_path: str | Path | None = None,
     ):
         """
         Args:
+            household_id: 世帯ID（後方互換性のため）
             profile: 世帯プロファイル
             llm_interface: LLMインターフェース
             prompt_template_path: プロンプトテンプレートのパス
         """
+        # 後方互換性: household_idが渡された場合、profileから取得
+        if profile is None:
+            raise ValueError("profile is required")
+
         # システムプロンプトの読み込み
         if prompt_template_path is None:
             prompt_template_path = (
@@ -60,15 +66,31 @@ class HouseholdAgent(BaseAgent):
 
         system_prompt = load_prompt_template(prompt_template_path)
 
+        # Phase 7.3.1: 決定頻度の設定（最適化）
+        decision_frequencies = {
+            "savings": 3,  # 3ステップごと
+            "housing": 10,  # 10ステップごと
+            "skill_investment": 5,  # 5ステップごと
+        }
+
         super().__init__(
             agent_id=f"household_{profile.id}",
             agent_type="household",
             llm_interface=llm_interface,
             system_prompt=system_prompt,
             memory_size=5,
+            decision_frequencies=decision_frequencies,
         )
 
         self.profile = profile
+
+        # Phase 7.3.1: ヒューリスティック貯蓄率（最適化）
+        self.heuristic_savings_rate = 0.15  # デフォルト15%
+
+        # 初期化時にデータから属性を設定
+        self.income = getattr(profile, "monthly_income", 50000.0)
+        self.consumption = getattr(profile, "cash", 50000.0) * 0.1  # 10%を消費
+        self.food_expenditure = self.consumption * 0.3  # 消費の30%を食料
 
         # 属性として保存
         self.attributes = {
@@ -338,6 +360,34 @@ Consumption Preferences:
             self.attributes["age"] = updates["age"]
         if "employment_status" in updates:
             self.attributes["employment_status"] = updates["employment_status"].value
+
+    def heuristic_savings_decision(self, current_step: int) -> dict[str, Any]:
+        """
+        ヒューリスティック貯蓄決定（Phase 7.3.1: 最適化）
+
+        LLMを使わずに、単純なルールベースで貯蓄額を計算します。
+
+        Args:
+            current_step: 現在のステップ
+
+        Returns:
+            貯蓄決定の辞書
+        """
+        # 所得の15%を貯蓄
+        savings_amount = self.income * self.heuristic_savings_rate
+
+        # 現金が不足している場合は貯蓄しない
+        if self.profile.cash < savings_amount:
+            savings_amount = 0.0
+
+        return {
+            "function_name": "financial_decision",
+            "arguments": {
+                "action": "save" if savings_amount > 0 else "do_nothing",
+                "amount": savings_amount,
+                "reasoning": f"Heuristic: Save {self.heuristic_savings_rate:.0%} of monthly income",
+            },
+        }
 
 
 class HouseholdProfileGenerator:
