@@ -311,54 +311,74 @@ def generate_visualizations(results: dict, output_dir: Path):
 
     import matplotlib.pyplot as plt
 
-    from src.visualization.plots import (
-        plot_beveridge_curve,
-        plot_economic_indicators,
-        plot_income_distribution,
-        plot_okuns_law,
-        plot_phillips_curve,
-    )
+    from src.visualization.plots import EconomicPlots
 
     viz_dir = output_dir / "visualizations"
     viz_dir.mkdir(parents=True, exist_ok=True)
 
     history = results["history"]
+    plotter = EconomicPlots()
 
     # 1. 経済指標の時系列
     logger.info("Generating economic indicators plot...")
-    fig = plot_economic_indicators(history)
+    economic_data = {
+        "GDP": history["gdp"],
+        "Unemployment": history["unemployment_rate"],
+        "Inflation": history["inflation"],
+        "Gini": history["gini"],
+    }
+    fig = plotter.plot_time_series(
+        economic_data, title="Economic Indicators Over Time"
+    )
     plt.savefig(viz_dir / "economic_indicators.png", dpi=300, bbox_inches="tight")
     plt.close(fig)
     logger.info(f"  Saved: {viz_dir / 'economic_indicators.png'}")
 
     # 2. Phillips Curve
     logger.info("Generating Phillips Curve plot...")
-    fig = plot_phillips_curve(history)
+    fig, _ = plotter.plot_phillips_curve(
+        history["unemployment_rate"], history["inflation"]
+    )
     plt.savefig(viz_dir / "phillips_curve.png", dpi=300, bbox_inches="tight")
     plt.close(fig)
     logger.info(f"  Saved: {viz_dir / 'phillips_curve.png'}")
 
-    # 3. Okun's Law
+    # 3. Okun's Law（失業率変化とGDP成長率）
     logger.info("Generating Okun's Law plot...")
-    fig = plot_okuns_law(history)
-    plt.savefig(viz_dir / "okuns_law.png", dpi=300, bbox_inches="tight")
-    plt.close(fig)
-    logger.info(f"  Saved: {viz_dir / 'okuns_law.png'}")
+    if len(history["unemployment_rate"]) > 1 and len(history["gdp"]) > 1:
+        unemployment_change = [
+            history["unemployment_rate"][i] - history["unemployment_rate"][i - 1]
+            for i in range(1, len(history["unemployment_rate"]))
+        ]
+        gdp_growth = [
+            (history["gdp"][i] - history["gdp"][i - 1]) / history["gdp"][i - 1]
+            for i in range(1, len(history["gdp"]))
+        ]
+        fig, _ = plotter.plot_okun_law(unemployment_change, gdp_growth)
+        plt.savefig(viz_dir / "okuns_law.png", dpi=300, bbox_inches="tight")
+        plt.close(fig)
+        logger.info(f"  Saved: {viz_dir / 'okuns_law.png'}")
 
     # 4. Beveridge Curve
     logger.info("Generating Beveridge Curve plot...")
-    fig = plot_beveridge_curve(history)
-    plt.savefig(viz_dir / "beveridge_curve.png", dpi=300, bbox_inches="tight")
-    plt.close(fig)
-    logger.info(f"  Saved: {viz_dir / 'beveridge_curve.png'}")
+    if len(history["vacancy_rate"]) > 0:
+        fig, _ = plotter.plot_beveridge_curve(
+            history["unemployment_rate"], history["vacancy_rate"]
+        )
+        plt.savefig(viz_dir / "beveridge_curve.png", dpi=300, bbox_inches="tight")
+        plt.close(fig)
+        logger.info(f"  Saved: {viz_dir / 'beveridge_curve.png'}")
 
     # 5. 最終所得分布
     logger.info("Generating income distribution plot...")
-    final_incomes = history["household_incomes"][-1]
-    fig = plot_income_distribution(final_incomes)
-    plt.savefig(viz_dir / "income_distribution.png", dpi=300, bbox_inches="tight")
-    plt.close(fig)
-    logger.info(f"  Saved: {viz_dir / 'income_distribution.png'}")
+    if len(history["household_incomes"]) > 0:
+        final_incomes = history["household_incomes"][-1]
+        fig, _ = plotter.plot_distribution(
+            final_incomes, title="Income Distribution", xlabel="Income"
+        )
+        plt.savefig(viz_dir / "income_distribution.png", dpi=300, bbox_inches="tight")
+        plt.close(fig)
+        logger.info(f"  Saved: {viz_dir / 'income_distribution.png'}")
 
     logger.info(f"\nAll visualizations saved to: {viz_dir}")
 
