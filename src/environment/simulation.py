@@ -1428,8 +1428,11 @@ class Simulation:
         # 基準年価格を設定（価格データがある最初のステップ）
         if self.base_year_prices is None and current_prices:
             self.base_year_prices = current_prices.copy()
+            # 初期価格指数を100.0に設定（基準年）
+            self.prev_price_index = 100.0
             logger.info(f"Base year prices set with {len(self.base_year_prices)} goods")
             logger.info(f"[Inflation] base_year_prices = {self.base_year_prices}")
+            logger.info(f"[Inflation] Initialized prev_price_index = 100.0 (base year)")
 
         # 価格指数を計算（基準年価格と現在価格の両方がある場合のみ）
         if self.base_year_prices and current_prices:
@@ -1498,6 +1501,8 @@ class Simulation:
             "policy_rate": policy_rate,
             "num_households": len(self.households),
             "num_firms": len(self.firms),
+            "consumption": total_consumption,
+            "investment": total_investment,
         }
 
     def _record_history(self, indicators: dict[str, float]):
