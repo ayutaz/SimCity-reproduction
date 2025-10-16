@@ -1628,7 +1628,8 @@ class Simulation:
         Returns:
             指標の辞書
         """
-        return self._calculate_indicators()
+        # prev_price_indexを更新しない（step()で既に更新済み）
+        return self._calculate_indicators(update_prev_price_index=False)
 
     def get_metrics(self) -> dict[str, float]:
         """
@@ -1637,7 +1638,8 @@ class Simulation:
         Returns:
             指標の辞書
         """
-        indicators = self._calculate_indicators()
+        # prev_price_indexを更新しない（step()で既に更新済み）
+        indicators = self._calculate_indicators(update_prev_price_index=False)
 
         # スクリプトが期待する追加のメトリクス
         if self.households:
