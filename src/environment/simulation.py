@@ -330,6 +330,11 @@ class Simulation:
         """
         logger.debug("Production and Trading Stage")
 
+        # Phase 6.6: 全世帯のmonthly_incomeをリセット（UBI累積バグ修正）
+        # 理由: 失業者のmonthly_incomeが累積せず、毎ステップ正しくUBI500のみになるようにする
+        for household in self.households:
+            household.profile.monthly_income = 0.0
+
         # 0. 賃金支払い（Phase 9.9.3: 毎月の賃金支払い処理）
         total_wages_paid = 0.0
         for firm in self.firms:
