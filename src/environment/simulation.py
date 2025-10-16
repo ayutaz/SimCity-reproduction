@@ -815,8 +815,8 @@ class Simulation:
         job_openings_count = sum(f.profile.job_openings for f in self.firms)
         avg_wage = sum(f.profile.wage_offered for f in self.firms if f.profile.job_openings > 0) / max(1, sum(1 for f in self.firms if f.profile.job_openings > 0))
 
-        # マクロ経済指標
-        current_indicators = self._calculate_indicators()
+        # マクロ経済指標（prev_price_indexを更新しない）
+        current_indicators = self._calculate_indicators(update_prev_price_index=False)
 
         observation = {
             "current_step": self.state.step,
@@ -866,8 +866,8 @@ class Simulation:
         job_seekers_count = sum(1 for h in self.households if h.profile.employment_status == EmploymentStatus.UNEMPLOYED)
         avg_market_wage = sum(f.profile.wage_offered for f in self.firms) / len(self.firms) if self.firms else 2000.0
 
-        # マクロ経済指標
-        current_indicators = self._calculate_indicators()
+        # マクロ経済指標（prev_price_indexを更新しない）
+        current_indicators = self._calculate_indicators(update_prev_price_index=False)
 
         observation = {
             "current_step": self.state.step,
@@ -908,8 +908,8 @@ class Simulation:
         Returns:
             観察情報の辞書
         """
-        # マクロ経済指標（すべて）
-        current_indicators = self._calculate_indicators()
+        # マクロ経済指標（すべて、prev_price_indexを更新しない）
+        current_indicators = self._calculate_indicators(update_prev_price_index=False)
 
         # 税収・支出・準備金
         budget_balance = self.government.state.tax_revenue - self.government.state.expenditure
@@ -959,8 +959,8 @@ class Simulation:
         Returns:
             観察情報の辞書
         """
-        # マクロ経済指標
-        current_indicators = self._calculate_indicators()
+        # マクロ経済指標（prev_price_indexを更新しない）
+        current_indicators = self._calculate_indicators(update_prev_price_index=False)
 
         # 潜在GDP（簡略版: 過去平均の1.02倍）
         if len(self.state.history["gdp"]) >= 3:
@@ -1349,9 +1349,12 @@ class Simulation:
             # 現状維持
             logger.debug("Central Bank maintaining current policy")
 
-    def _calculate_indicators(self) -> dict[str, float]:
+    def _calculate_indicators(self, update_prev_price_index: bool = True) -> dict[str, float]:
         """
         マクロ経済指標を計算
+
+        Args:
+            update_prev_price_index: 価格指数を次ステップ用に更新するか（observation構築時はFalse）
 
         Returns:
             指標の辞書
@@ -1478,8 +1481,10 @@ class Simulation:
                         inflation = 0.0
                         logger.info("[Inflation] First step: inflation=0.0 (expected)")
 
-                    # 次のステップのために現在の価格指数を保存
-                    self.prev_price_index = price_index
+                    # 次のステップのために現在の価格指数を保存（メインステップのみ）
+                    if update_prev_price_index:
+                        self.prev_price_index = price_index
+                        logger.info(f"[Inflation] Updated prev_price_index to {price_index:.4f} for next step")
                 else:
                     logger.warning(f"[Inflation] base_avg <= 0: {base_avg}")
             else:
