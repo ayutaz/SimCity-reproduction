@@ -350,12 +350,9 @@ class Simulation:
                 f"Wage payments: ${total_wages_paid:.2f} paid to {sum(len(f.profile.employees) for f in self.firms)} employees"
             )
 
-        # 1. 企業の投資指標を初期化・計算
+        # 企業の投資指標を0で初期化（LLM決定で上書きされる）
         for firm in self.firms:
-            # 投資 = 資本維持投資（減価償却分の補填）
-            # 仮定: 年間減価償却率5% → 月次0.4167% ≈ 0.005（若干多めに設定）
-            depreciation_rate = 0.005  # 月次0.5%
-            firm.investment = firm.profile.capital * depreciation_rate
+            firm.investment = 0.0
 
         # 1. 企業が生産して出品
         listings = []
@@ -486,13 +483,16 @@ class Simulation:
         # 3. 政府の税収を更新
         self.government.state.tax_revenue = total_income_tax + total_vat
 
-        # 4. UBI配布
+        # 4. UBI配布（Phase 6.2: 設定ファイルの固定値を使用）
         ubi_expenditure = 0.0
         if self.government.state.ubi_enabled:
-            ubi_expenditure = self.government.distribute_ubi(len(self.households))
+            # UBI額は設定ファイルの値で固定（LLMによる変更を無視）
+            fixed_ubi_amount = self.config.economy.welfare.ubi_amount
+            ubi_expenditure = fixed_ubi_amount * len(self.households)
+
             # 各世帯にUBIを付与
             for household in self.households:
-                household.profile.monthly_income += self.government.state.ubi_amount
+                household.profile.monthly_income += fixed_ubi_amount
 
         # 5. 失業給付（Phase 9.9.4: Enum対応）
         from src.models.data_models import EmploymentStatus
@@ -1135,23 +1135,14 @@ class Simulation:
             fire_employee_ids = arguments.get("fire_employee_ids", [])
 
             if action == "hire":
-                # Phase 1.2: 採用目標の動的計算
-                # 生産目標と現在の生産能力から必要な労働力を計算
+                # Phase 4.1: 雇用目標を資本規模ベースで計算
+                # 理由: 従業員数ベースだと従業員が少ない企業は求人を増やせない循環問題が発生
+                # 資本規模に応じた適正な雇用目標を設定
                 current_employees = len(firm.profile.employees)
-                capacity = firm.calculate_production_capacity(self.households)
-                target_production = firm.profile.production_quantity
 
-                # 必要労働力を推定（生産能力が従業員数に比例すると仮定）
-                if capacity > 0 and current_employees > 0:
-                    # 生産能力に対する生産目標の比率
-                    production_ratio = target_production / capacity
-                    # 必要労働力 = 現従業員数 × 生産比率
-                    required_labor = int(current_employees * production_ratio)
-                    # 最低1人は必要
-                    required_labor = max(1, required_labor)
-                else:
-                    # 生産能力がゼロの場合、最低3人を目標
-                    required_labor = 3
+                # 雇用目標 = 資本 / 50,000（資本規模に比例）
+                # 例: 資本50,000 → 目標1人、資本500,000 → 目標10人
+                required_labor = max(1, int(firm.profile.capital / 50000))
 
                 # LLMの決定を尊重しつつ、計算された値も考慮
                 if job_openings is not None:
@@ -1167,10 +1158,11 @@ class Simulation:
                 if wage_offered:
                     firm.profile.wage_offered = max(1000.0, wage_offered)
 
-                logger.debug(
-                    f"Firm {firm.profile.id} posting {firm.profile.job_openings} jobs "
-                    f"(current: {current_employees}, required: {required_labor}) "
-                    f"at ${firm.profile.wage_offered:.2f}"
+                # Phase 4.1診断ログ
+                logger.info(
+                    f"Firm {firm.profile.id} hiring: capital=${firm.profile.capital:.0f}, "
+                    f"employees={current_employees}, required={required_labor}, "
+                    f"LLM_openings={job_openings}, final_openings={firm.profile.job_openings}"
                 )
 
             elif action == "fire" and fire_employee_ids:
@@ -1217,8 +1209,7 @@ class Simulation:
                         firm.profile.cash -= investment_amount
                         firm.profile.capital += investment_amount
                         # investmentフィールドを更新（Phase 9.8の投資指標）
-                        if hasattr(firm, "investment"):
-                            firm.investment = investment_amount
+                        firm.investment = investment_amount
                         logger.debug(
                             f"Firm {firm.profile.id} invested ${investment_amount:.2f} in capital "
                             f"(profit: ${monthly_profit:.2f})"
@@ -1229,8 +1220,7 @@ class Simulation:
                     if firm.profile.cash >= auto_investment:
                         firm.profile.cash -= auto_investment
                         firm.profile.capital += auto_investment
-                        if hasattr(firm, "investment"):
-                            firm.investment = auto_investment
+                        firm.investment = auto_investment
                         logger.debug(
                             f"Firm {firm.profile.id} auto-invested ${auto_investment:.2f} "
                             f"(maintenance, profit: ${monthly_profit:.2f})"
@@ -1244,14 +1234,34 @@ class Simulation:
                 # 利益がない場合のみ、LLM指定額をそのまま投資
                 firm.profile.cash -= amount
                 firm.profile.capital += amount
-                if hasattr(firm, "investment"):
-                    firm.investment = amount
+                firm.investment = amount
                 logger.debug(f"Firm {firm.profile.id} invested ${amount:.2f} in capital")
             elif action == "repay_debt" and firm.profile.debt >= amount and firm.profile.cash >= amount:
                 # 負債返済
                 firm.profile.cash -= amount
                 firm.profile.debt -= amount
                 logger.debug(f"Firm {firm.profile.id} repaid ${amount:.2f} debt")
+
+        # 全企業に対して、決定内容に関わらず自動投資を実行
+        # （investment_decision関数で既に投資済みの場合はスキップ）
+        if function_name != "investment_decision" and firm.investment == 0.0:
+            # 月次利益を計算
+            revenue = firm.profile.sales_quantity * firm.profile.price
+            num_employees = len(firm.profile.employees)
+            wage_cost = num_employees * firm.profile.wage_offered
+            monthly_profit = revenue - wage_cost
+
+            # 利益がある場合、利益の10%を自動投資（資本維持）
+            if monthly_profit > 0:
+                auto_investment = monthly_profit * 0.10
+                if firm.profile.cash >= auto_investment:
+                    firm.profile.cash -= auto_investment
+                    firm.profile.capital += auto_investment
+                    firm.investment = auto_investment
+                    logger.debug(
+                        f"Firm {firm.profile.id} auto-invested ${auto_investment:.2f} "
+                        f"(not called investment_decision, profit: ${monthly_profit:.2f})"
+                    )
 
     def _execute_government_decision(self, decision: dict[str, any]):
         """
@@ -1369,10 +1379,10 @@ class Simulation:
 
         # GDP計算（簡略版）
         total_consumption = sum(
-            getattr(h, "consumption", 5000.0) for h in self.households
+            getattr(h, "consumption", 0.0) for h in self.households
         )
         total_investment = sum(
-            getattr(f, "investment", f.profile.capital * 0.005) for f in self.firms
+            getattr(f, "investment", 0.0) for f in self.firms
         )
         government_spending = (
             getattr(self.government.state, "expenditure", 0.0)
@@ -1653,16 +1663,16 @@ class Simulation:
             indicators["average_income"] = 0.0
 
         indicators["total_consumption"] = sum(
-            getattr(h, "consumption", 5000.0) for h in self.households
+            getattr(h, "consumption", 0.0) for h in self.households
         )
         indicators["total_investment"] = sum(
-            getattr(f, "investment", f.profile.capital * 0.005) for f in self.firms
+            getattr(f, "investment", 0.0) for f in self.firms
         )
-        indicators["vacancy_rate"] = (
-            getattr(self.state.market, "vacancy_rate", 0.03)
-            if self.state.market
-            else 0.03
-        )
+
+        # Vacancy Rate（求人率）を動的計算: 総求人数 / 労働力
+        total_job_openings = sum(f.profile.job_openings for f in self.firms)
+        total_labor_force = len(self.households) if self.households else 1
+        indicators["vacancy_rate"] = total_job_openings / total_labor_force
         indicators["government_spending"] = (
             getattr(self.government.state, "expenditure", 0.0)
             if self.government and self.government.state
