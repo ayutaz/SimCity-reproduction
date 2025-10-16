@@ -139,7 +139,8 @@ def run_simulation(config, steps: int, output_dir: Path, checkpoint_interval: in
         # 履歴に追加
         history["gdp"].append(metrics["gdp"])
         history["unemployment_rate"].append(metrics["unemployment_rate"])
-        history["inflation"].append(metrics["inflation"])
+        # inflationはsimulation.state.historyから取得（step()内で正しく計算済み）
+        history["inflation"].append(sim.state.history["inflation"][-1])
         history["gini"].append(metrics["gini"])
         history["average_income"].append(metrics["average_income"])
         history["consumption"].append(metrics["total_consumption"])
