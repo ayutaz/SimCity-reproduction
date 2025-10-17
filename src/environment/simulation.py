@@ -709,8 +709,16 @@ class Simulation:
                         household.profile.wage = match.wage
                         break
 
+            # Phase 7.7: 拒否統計をログ出力して低マッチング率の原因を特定
+            labor_stats = self.labor_market.get_statistics()
             logger.info(
                 f"Labor market: {len(matches)} matches from {len(job_postings)} postings and {len(job_seekers)} seekers"
+            )
+            logger.info(
+                f"Labor market stats: match_rate={labor_stats['match_rate']:.2%}, "
+                f"rejected_by_wage={labor_stats['rejected_by_wage']}, "
+                f"rejected_by_probability={labor_stats['rejected_by_probability']}, "
+                f"rejected_by_distance={labor_stats['rejected_by_distance']}"
             )
         else:
             logger.info(
@@ -1140,21 +1148,20 @@ class Simulation:
             fire_employee_ids = arguments.get("fire_employee_ids", [])
 
             if action == "hire":
-                # Phase 4.1: 雇用目標を資本規模ベースで計算
+                # Phase 7.1: 雇用目標を資本規模ベースで計算（分母を25,000に変更）
                 # 理由: 従業員数ベースだと従業員が少ない企業は求人を増やせない循環問題が発生
                 # 資本規模に応じた適正な雇用目標を設定
                 current_employees = len(firm.profile.employees)
 
-                # 雇用目標 = 資本 / 50,000（資本規模に比例）
-                # 例: 資本50,000 → 目標1人、資本500,000 → 目標10人
-                required_labor = max(1, int(firm.profile.capital / 50000))
+                # 雇用目標 = 資本 / 25,000（資本規模に比例）
+                # 例: 資本50,000 → 目標2人、資本500,000 → 目標20人
+                required_labor = max(1, int(firm.profile.capital / 25000))
 
-                # LLMの決定を尊重しつつ、計算された値も考慮
+                # Phase 7.3: 計算値を優先（LLMが低い値を提案しても、必要人数は確保）
                 if job_openings is not None:
-                    # LLMの決定を優先するが、最低でも1人は募集
                     calculated_openings = max(0, required_labor - current_employees)
-                    # LLM決定と計算値の平均を取る
-                    final_openings = int((job_openings + calculated_openings) / 2)
+                    # LLM決定と計算値の大きい方を採用（求人不足を防ぐ）
+                    final_openings = max(job_openings, calculated_openings)
                     firm.profile.job_openings = max(1, final_openings)
                 else:
                     # LLMが指定しない場合は計算値を使用
@@ -1267,6 +1274,41 @@ class Simulation:
                         f"Firm {firm.profile.id} auto-invested ${auto_investment:.2f} "
                         f"(not called investment_decision, profit: ${monthly_profit:.2f})"
                     )
+
+        # Phase 7.1: 全企業に対して、labor_decisionを呼び出さなかった場合も雇用目標を維持
+        # 理由: LLMは3つの関数から1つしか選択できないため、多くの企業がlabor_decision以外を選択
+        # 雇用不足の企業は自動的に求人を維持/増加させることで、失業率を健全な範囲に保つ
+        if function_name != "labor_decision":
+            current_employees = len(firm.profile.employees)
+            # Phase 7.1: 分母を25,000に変更（企業の雇用目標を2倍に）
+            required_labor = max(1, int(firm.profile.capital / 25000))
+
+            if current_employees < required_labor:
+                # 雇用不足の場合、求人を維持/増加
+                needed = required_labor - current_employees
+                firm.profile.job_openings = max(firm.profile.job_openings, needed)
+                logger.debug(
+                    f"Firm {firm.profile.id} auto-maintained job openings: "
+                    f"capital=${firm.profile.capital:.0f}, employees={current_employees}, "
+                    f"required={required_labor}, job_openings={firm.profile.job_openings}"
+                )
+
+        # Phase 7.5: 全企業に対して、決定内容に関わらず最終的な求人数チェック
+        # 理由: 一部企業がどの決定関数も呼ばない（fallback）ケースで求人が0になる問題を解決
+        # どの関数を呼んだかに関係なく、資本規模に応じた最低限の求人を強制的に確保
+        current_employees = len(firm.profile.employees)
+        required_labor = max(1, int(firm.profile.capital / 25000))
+
+        if current_employees < required_labor:
+            # 雇用不足の場合、必要人数を強制的に求人設定
+            needed = required_labor - current_employees
+            if firm.profile.job_openings < needed:
+                firm.profile.job_openings = needed
+                logger.info(
+                    f"Firm {firm.profile.id} FORCED job openings: "
+                    f"capital=${firm.profile.capital:.0f}, employees={current_employees}, "
+                    f"required={required_labor}, job_openings={firm.profile.job_openings}"
+                )
 
     def _execute_government_decision(self, decision: dict[str, any]):
         """

@@ -3,16 +3,16 @@
 # シミュレーション基本設定
 simulation:
   max_steps: 180  # 総ステップ数（15年 = 180ヶ月）
-  phase1_steps: 36  # Phase 1: 人口流入期（3年）
+  phase1_steps: 5  # Phase 1: 人口流入期（Phase 7.6: 36 → 5ステップ、急速な人口増加を抑制）
   phase2_steps: 144  # Phase 2: 発展期（12年）
   random_seed: 42  # 再現性のための乱数シード
 
 # エージェント数
 agents:
   households:
-    initial: 10  # 初期世帯数
+    initial: 3  # 初期世帯数（Phase 7.9: 5 → 3、さらなる労働供給削減）
     max: 200  # 最大世帯数
-    monthly_inflow: 5  # Phase 1での月間流入数
+    monthly_inflow: 1  # Phase 1での月間流入数（Phase 7.6: 2 → 1、さらなる流入抑制）
   firms:
     initial: 10  # 初期企業数（10世帯に対して十分な雇用を提供）
     max: 50  # 最大企業数
@@ -58,7 +58,7 @@ economy:
 # 市場設定
 markets:
   labor:
-    matching_probability: 0.7  # マッチング確率
+    matching_probability: 1.0  # マッチング確率（Phase 7.9: 0.9 → 1.0、確率的拒否を完全に排除）
     minimum_wage: 1000  # 最低賃金
 
   goods:
