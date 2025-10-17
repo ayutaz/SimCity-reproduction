@@ -10,7 +10,7 @@ simulation:
 # エージェント数
 agents:
   households:
-    initial: 3  # 初期世帯数（Phase 7.9: 5 → 3、さらなる労働供給削減）
+    initial: 5  # 初期世帯数（Phase 7.6: 10 → 5、Phase 7.9で3にしたが悪化したため5に戻す）
     max: 200  # 最大世帯数
     monthly_inflow: 1  # Phase 1での月間流入数（Phase 7.6: 2 → 1、さらなる流入抑制）
   firms:
