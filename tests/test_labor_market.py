@@ -156,7 +156,8 @@ class TestLaborMarket:
 
         # スキル要件がないのでマッチングする
         assert len(matches) == 1
-        assert matches[0].skill_match_score >= 0.9  # スキル要件なしなので高スコア
+        # 新スコアリング: スキル65% + 賃金25% + ランダム10% → 合計約0.8-0.95
+        assert matches[0].skill_match_score >= 0.8  # 個人化スコアリングで若干低下
 
     def test_multiple_openings(self, labor_market):
         """複数の求人枠"""

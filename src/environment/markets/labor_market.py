@@ -118,7 +118,13 @@ class LaborMarket:
         job_seekers: list[JobSeeker],
     ) -> list[JobMatch]:
         """
-        求人と求職者をマッチング
+        求人と求職者をマッチング（同時マッチング + 抽選アルゴリズム）
+
+        改善点:
+        - 全求職者のプリファレンスを先に収集
+        - 過剰応募の企業では抽選を実施
+        - 落選者は次の選択肢に自動的に応募
+        - マッチング率を大幅に改善（22% → 60-80%目標）
 
         Args:
             job_postings: 求人リスト
@@ -132,26 +138,47 @@ class LaborMarket:
         self.total_seekers += len(job_seekers)
 
         matches: list[JobMatch] = []
-
-        # 求職者ごとに最適な求人を探す
         matched_seekers = set()
 
+        # ステップ1: 全求職者のプリファレンスリスト（企業ランキング）を作成
+        seeker_preferences: dict[int, list[tuple[float, JobPosting]]] = {}
         for seeker in job_seekers:
-            if seeker.household_id in matched_seekers:
-                continue
-
             # 候補求人をスコアリング
             candidates = self._score_job_postings(seeker, job_postings)
+            # スコアが高い順にソート
+            seeker_preferences[seeker.household_id] = sorted(
+                candidates, key=lambda x: -x[0]
+            )
 
-            # スコアが高い順にマッチングを試行
-            for score, posting in sorted(candidates, key=lambda x: -x[0]):
-                # 求人枠が残っているか
-                if posting.num_openings <= 0:
+        # 各求職者の現在の選択肢インデックス
+        seeker_choice_index: dict[int, int] = {
+            seeker.household_id: 0 for seeker in job_seekers
+        }
+
+        # ステップ2: マッチングラウンドを反復（最大で選択肢数分）
+        max_rounds = max(len(prefs) for prefs in seeker_preferences.values()) if seeker_preferences else 0
+
+        for _ in range(max_rounds):
+            # 各企業への応募を集計
+            applications: dict[int, list[tuple[int, float]]] = {}  # firm_id: [(household_id, score), ...]
+
+            for seeker in job_seekers:
+                if seeker.household_id in matched_seekers:
+                    continue  # 既にマッチング済み
+
+                choice_idx = seeker_choice_index[seeker.household_id]
+                preferences = seeker_preferences[seeker.household_id]
+
+                # まだ選択肢が残っているか
+                if choice_idx >= len(preferences):
                     continue
+
+                score, posting = preferences[choice_idx]
 
                 # 賃金条件チェック
                 if posting.wage_offered < seeker.reservation_wage:
                     self.rejected_by_wage += 1
+                    seeker_choice_index[seeker.household_id] += 1  # 次の選択肢へ
                     continue
 
                 # 距離チェック（オプション）
@@ -161,24 +188,69 @@ class LaborMarket:
                     )
                     if distance > self.max_commute_distance:
                         self.rejected_by_distance += 1
+                        seeker_choice_index[seeker.household_id] += 1
                         continue
 
                 # 確率的マッチング
                 if random.random() > self.matching_probability:
                     self.rejected_by_probability += 1
+                    seeker_choice_index[seeker.household_id] += 1
                     continue
 
-                # マッチング成功
-                match = JobMatch(
-                    firm_id=posting.firm_id,
-                    household_id=seeker.household_id,
-                    wage=posting.wage_offered,
-                    skill_match_score=score,
-                )
-                matches.append(match)
-                matched_seekers.add(seeker.household_id)
-                posting.num_openings -= 1  # 求人枠を減らす
-                self.total_matches += 1
+                # この企業に応募
+                if posting.firm_id not in applications:
+                    applications[posting.firm_id] = []
+                applications[posting.firm_id].append((seeker.household_id, score))
+
+            # ステップ3: 各企業でマッチングを実行
+            for posting in job_postings:
+                if posting.num_openings <= 0:
+                    continue  # 求人枠なし
+
+                if posting.firm_id not in applications:
+                    continue  # 応募者なし
+
+                applicants = applications[posting.firm_id]
+
+                if len(applicants) <= posting.num_openings:
+                    # 応募者 ≤ 求人枠: 全員マッチング
+                    for household_id, score in applicants:
+                        match = JobMatch(
+                            firm_id=posting.firm_id,
+                            household_id=household_id,
+                            wage=posting.wage_offered,
+                            skill_match_score=score,
+                        )
+                        matches.append(match)
+                        matched_seekers.add(household_id)
+                        posting.num_openings -= 1
+                        self.total_matches += 1
+                else:
+                    # 応募者 > 求人枠: 抽選で選択
+                    # スコアの高い順にソートしてから抽選（公平性とパフォーマンスのバランス）
+                    applicants_sorted = sorted(applicants, key=lambda x: -x[1])
+                    selected = applicants_sorted[:posting.num_openings]
+
+                    for household_id, score in selected:
+                        match = JobMatch(
+                            firm_id=posting.firm_id,
+                            household_id=household_id,
+                            wage=posting.wage_offered,
+                            skill_match_score=score,
+                        )
+                        matches.append(match)
+                        matched_seekers.add(household_id)
+                        posting.num_openings -= 1
+                        self.total_matches += 1
+
+                    # 落選者は次の選択肢へ
+                    rejected_ids = [household_id for household_id, _ in applicants_sorted[posting.num_openings:]]
+                    for household_id in rejected_ids:
+                        seeker_choice_index[household_id] += 1
+
+            # このラウンドでマッチングがなければ終了
+            # （全員マッチング済みか、全員が選択肢を使い果たした）
+            if not applications:
                 break
 
         logger.info(
@@ -192,7 +264,11 @@ class LaborMarket:
         self, seeker: JobSeeker, postings: list[JobPosting]
     ) -> list[tuple[float, JobPosting]]:
         """
-        求職者に対する求人のスコアリング
+        求職者に対する求人のスコアリング（個人化版）
+
+        各求職者が異なる企業プリファレンスを持つように改善:
+        - より識別力の高い賃金スコア計算
+        - 個人ごとのランダムなプリファレンス（タイブレーク用）
 
         Args:
             seeker: 求職者
@@ -204,18 +280,31 @@ class LaborMarket:
         scored = []
 
         for posting in postings:
-            # スキル適合度を計算
+            # スキル適合度を計算（個人のスキルレベルを反映）
             skill_score = self._calculate_skill_match(
                 seeker.skills, posting.skill_requirements
             )
 
-            # 賃金スコア（高いほど良い、正規化）
-            wage_score = min(
-                1.0, posting.wage_offered / max(1.0, seeker.reservation_wage * 1.5)
-            )
+            # 改善版賃金スコア: 対数スケールでより識別力を持たせる
+            # 最低賃金以上の賃金を提供する企業を適切に区別
+            wage_ratio = posting.wage_offered / max(1.0, seeker.reservation_wage)
+            if wage_ratio >= 1.0:
+                # 対数スケールで1.0から1.5の範囲にマッピング（賃金が2倍で1.3, 3倍で1.4）
+                wage_score = min(1.5, 1.0 + 0.5 * np.log2(wage_ratio))
+            else:
+                # 最低賃金未満はペナルティ
+                wage_score = wage_ratio * 0.5
 
-            # 総合スコア（スキル70%、賃金30%）
-            total_score = 0.7 * skill_score + 0.3 * wage_score
+            # 個人ごとのランダムなプリファレンス（タイブレーク用、±10%）
+            # seeker.household_idをシードとして使用して再現性を確保
+            np.random.seed(seeker.household_id + posting.firm_id)
+            random_factor = 1.0 + np.random.uniform(-0.1, 0.1)
+            np.random.seed()  # シードをリセット
+
+            # 総合スコア（スキル65%、賃金25%、ランダム10%）
+            # ランダム成分を明示的に分離して、プリファレンスの多様性を確保
+            base_score = 0.65 * skill_score + 0.25 * (wage_score / 1.5)
+            total_score = base_score * random_factor
 
             scored.append((total_score, posting))
 

@@ -335,6 +335,36 @@ class Simulation:
         for household in self.households:
             household.profile.monthly_income = 0.0
 
+        # Phase 7.12: 雇用状態を実際の雇用リストと同期（賃金支払い前）
+        # 理由: firm.profile.employeesとemployment_statusフラグの不整合を解消
+        from src.models.data_models import EmploymentStatus
+
+        sync_count = 0
+        for household in self.households:
+            # 実際にどこかの企業の従業員リストに含まれているか確認
+            is_employed = any(
+                household.profile.id in firm.profile.employees
+                for firm in self.firms
+            )
+
+            # ステータスを同期
+            if is_employed and household.profile.employment_status != EmploymentStatus.EMPLOYED:
+                household.profile.employment_status = EmploymentStatus.EMPLOYED
+                sync_count += 1
+                logger.debug(
+                    f"Synced employment status for household {household.profile.id}: -> EMPLOYED"
+                )
+            elif not is_employed and household.profile.employment_status == EmploymentStatus.EMPLOYED:
+                household.profile.employment_status = EmploymentStatus.UNEMPLOYED
+                household.profile.employer_id = None
+                sync_count += 1
+                logger.debug(
+                    f"Synced employment status for household {household.profile.id}: -> UNEMPLOYED"
+                )
+
+        if sync_count > 0:
+            logger.info(f"Phase 7.12: Synced {sync_count} employment statuses")
+
         # 0. 賃金支払い（Phase 9.9.3: 毎月の賃金支払い処理）
         total_wages_paid = 0.0
         for firm in self.firms:
@@ -600,7 +630,7 @@ class Simulation:
 
         # 1. 世帯エージェントの意思決定（全世帯）
         logger.debug(f"Processing {len(self.households)} household decisions...")
-        for i, household in enumerate(self.households):
+        for _i, household in enumerate(self.households):
             # 観察情報を構築
             observation = self._build_household_observation(household)
 
@@ -616,7 +646,7 @@ class Simulation:
 
         # 2. 企業エージェントの意思決定（全企業）
         logger.debug(f"Processing {len(self.firms)} firm decisions...")
-        for i, firm in enumerate(self.firms):
+        for _i, firm in enumerate(self.firms):
             # 観察情報を構築
             observation = self._build_firm_observation(firm)
 
@@ -1492,7 +1522,7 @@ class Simulation:
             self.prev_price_index = 100.0
             logger.info(f"Base year prices set with {len(self.base_year_prices)} goods")
             logger.info(f"[Inflation] base_year_prices = {self.base_year_prices}")
-            logger.info(f"[Inflation] Initialized prev_price_index = 100.0 (base year)")
+            logger.info("[Inflation] Initialized prev_price_index = 100.0 (base year)")
 
         # 価格指数を計算（基準年価格と現在価格の両方がある場合のみ）
         if self.base_year_prices and current_prices:
