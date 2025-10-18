@@ -461,7 +461,9 @@ class Simulation:
                         break  # 予算を使い切った
 
                     # この財の出品を探す
-                    matching_listings = [l for l in listings if l.good_id == good_id]
+                    matching_listings = [
+                        listing for listing in listings if listing.good_id == good_id
+                    ]
                     if not matching_listings:
                         continue  # この財の出品がない
 
