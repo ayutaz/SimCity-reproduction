@@ -367,7 +367,11 @@ class SimCityDashboard:
                 latest_gdp = history["gdp"][-1]
                 latest_unemployment = history["unemployment_rate"][-1]
                 # 新旧両方のキー名に対応
-                latest_inflation = history.get("inflation", history.get("inflation_rate", [0]))[-1] if history.get("inflation") or history.get("inflation_rate") else 0
+                latest_inflation = (
+                    history.get("inflation", history.get("inflation_rate", [0]))[-1]
+                    if history.get("inflation") or history.get("inflation_rate")
+                    else 0
+                )
 
                 with col1:
                     st.metric("GDP", f"${latest_gdp:,.0f}")

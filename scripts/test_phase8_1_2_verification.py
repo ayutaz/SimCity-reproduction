@@ -36,9 +36,9 @@ def main():
     # 10ステップ実行
     num_steps = 10
     for step in range(num_steps):
-        logger.info(f"\n{'='*60}")
+        logger.info(f"\n{'=' * 60}")
         logger.info(f"Step {step + 1}/{num_steps}")
-        logger.info(f"{'='*60}")
+        logger.info(f"{'=' * 60}")
 
         indicators = sim.step()
 

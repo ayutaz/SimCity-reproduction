@@ -1,0 +1,134 @@
+{
+  "test_name": "Phase 8.1-8.2 Verification Test",
+  "steps": 10,
+  "verification_results": {
+    "demand_data": {
+      "total_goods": 10,
+      "goods_with_demand": 10,
+      "status": "✅ PASS",
+      "details": {
+        "clothing_basic": {
+          "total_steps": 10,
+          "non_zero_steps": 3,
+          "max_demand": 97.21336,
+          "avg_demand": 15.930096
+        },
+        "trans_vehicle_economy": {
+          "total_steps": 10,
+          "non_zero_steps": 1,
+          "max_demand": 36.0,
+          "avg_demand": 3.6
+        },
+        "clothing_casual": {
+          "total_steps": 10,
+          "non_zero_steps": 6,
+          "max_demand": 36.0,
+          "avg_demand": 16.700208
+        },
+        "housing_luxury": {
+          "total_steps": 10,
+          "non_zero_steps": 5,
+          "max_demand": 65.15466666666667,
+          "avg_demand": 24.496108506666666
+        },
+        "clothing_formal": {
+          "total_steps": 10,
+          "non_zero_steps": 3,
+          "max_demand": 72.0,
+          "avg_demand": 11.954144
+        },
+        "trans_public": {
+          "total_steps": 10,
+          "non_zero_steps": 6,
+          "max_demand": 36.31918375204543,
+          "avg_demand": 17.521489317374783
+        },
+        "food_fresh": {
+          "total_steps": 10,
+          "non_zero_steps": 3,
+          "max_demand": 51.98180636777127,
+          "avg_demand": 12.405087942581343
+        },
+        "util_water": {
+          "total_steps": 10,
+          "non_zero_steps": 3,
+          "max_demand": 26.087600000000002,
+          "avg_demand": 7.03580184
+        },
+        "other_personal_care": {
+          "total_steps": 10,
+          "non_zero_steps": 3,
+          "max_demand": 36.0,
+          "avg_demand": 9.667463999999999
+        },
+        "food_gourmet": {
+          "total_steps": 10,
+          "non_zero_steps": 4,
+          "max_demand": 68.98622222222222,
+          "avg_demand": 17.987382222222223
+        }
+      }
+    },
+    "unemployment_variability": {
+      "unique_values": 6,
+      "min_rate": 0.0,
+      "max_rate": 0.8333333333333334,
+      "variation": 0.8333333333333334,
+      "status": "✅ PASS",
+      "all_rates": [
+        0.8333333333333334,
+        0.14285714285714285,
+        0.125,
+        0.1111111111111111,
+        0.1,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "food_expenditure_ratios": {
+      "total_samples": 90,
+      "unique_values": 2,
+      "continuous_values_count": 0,
+      "binary_only": true,
+      "status": "❌ FAIL",
+      "sample_values": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ]
+    },
+    "gdp_composition": {
+      "avg_consumption": 95237.1122790111,
+      "avg_investment": 0.0,
+      "avg_gdp": 99587.1122790111,
+      "consumption_ratio": 0.9563196491950414,
+      "investment_ratio": 0.0
+    }
+  },
+  "summary": {
+    "total_tests": 3,
+    "passed": 2,
+    "failed": 1,
+    "success_rate": 0.6666666666666666
+  }
+}

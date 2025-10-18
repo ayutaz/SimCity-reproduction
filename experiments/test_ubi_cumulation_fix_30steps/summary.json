@@ -1,0 +1,12 @@
+{
+  "final_gdp": 517557.3726107852,
+  "final_unemployment": 0.9230769230769231,
+  "final_inflation": -0.007908026193177152,
+  "final_gini": 0.1579009638336195,
+  "avg_gdp": 282542.9308785239,
+  "avg_unemployment": 0.8005509019935348,
+  "avg_inflation": -0.013178503976275091,
+  "avg_gini": 0.2971708786858544,
+  "execution_time": 2994.5896928310394,
+  "steps": 30
+}

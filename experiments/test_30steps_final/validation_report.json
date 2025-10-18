@@ -1,0 +1,106 @@
+{
+  "metadata": {
+    "steps": 30,
+    "households": 200,
+    "firms": 50,
+    "seed": 42,
+    "execution_time": 4369.41623210907
+  },
+  "validation_results": {
+    "phillips_curve": {
+      "phenomenon": "Phillips Curve",
+      "correlation": 0.4500448395876053,
+      "p_value": 0.012581170709116362,
+      "valid": false,
+      "expected": "r < 0 (negative correlation)",
+      "description": "Unemployment rate vs Inflation rate"
+    },
+    "okuns_law": {
+      "phenomenon": "Okun's Law",
+      "correlation": -0.19326720879458775,
+      "p_value": 0.3151345423637605,
+      "valid": false,
+      "expected": "r < 0 (negative correlation)",
+      "description": "Unemployment change vs GDP growth rate"
+    },
+    "beveridge_curve": {
+      "phenomenon": "Beveridge Curve",
+      "correlation": NaN,
+      "p_value": NaN,
+      "valid": false,
+      "expected": "r < -0.5 (strong negative correlation)",
+      "description": "Unemployment rate vs Vacancy rate"
+    },
+    "price_elasticity": {
+      "phenomenon": "Price Elasticity",
+      "necessities": {
+        "mean_elasticity": -525979668502.62775,
+        "valid": false,
+        "expected": "-1 < E < 0"
+      },
+      "luxuries": {
+        "mean_elasticity": -981519212044.1284,
+        "valid": true,
+        "expected": "E < -1"
+      },
+      "valid": false,
+      "description": "Price change vs Demand change"
+    },
+    "engels_law": {
+      "phenomenon": "Engel's Law",
+      "correlation": -0.03070044150054074,
+      "p_value": 0.11582281261573246,
+      "valid": false,
+      "expected": "r < 0 (negative correlation)",
+      "description": "Income vs Food expenditure ratio"
+    },
+    "investment_volatility": {
+      "phenomenon": "Investment Volatility",
+      "investment_std": 0.0,
+      "consumption_std": 662609.0365811344,
+      "ratio": 0.0,
+      "valid": false,
+      "expected": "std(Investment) > std(Consumption)",
+      "description": "Volatility comparison"
+    },
+    "price_stickiness": {
+      "phenomenon": "Price Stickiness",
+      "price_change_frequency": 0.5674164596578388,
+      "demand_change_frequency": 0.8,
+      "valid": true,
+      "expected": "Price change frequency < Demand change frequency",
+      "description": "Price adjustment delay"
+    },
+    "wage_price_spiral": {
+      "phenomenon": "Wage-Price Spiral",
+      "correlation": -0.4500448395876054,
+      "p_value": 0.012581170709116362,
+      "valid": false,
+      "expected": "r > 0 (positive correlation)",
+      "description": "Labor market tightness vs Inflation rate"
+    },
+    "capital_accumulation": {
+      "phenomenon": "Capital Accumulation",
+      "correlation": 0.7603087410184753,
+      "p_value": 1.7046926368225627e-06,
+      "valid": true,
+      "expected": "r > 0 (positive correlation)",
+      "description": "Cumulative investment vs GDP growth rate"
+    },
+    "consumption_smoothing": {
+      "phenomenon": "Consumption Smoothing",
+      "consumption_cv": 0.5774801154804355,
+      "income_cv": 2.117804492318388,
+      "ratio": 0.27267867137989776,
+      "valid": true,
+      "expected": "CV(Consumption) < CV(Income)",
+      "description": "Household consumption stabilization"
+    },
+    "summary": {
+      "total": 10,
+      "valid": 3,
+      "invalid": 7,
+      "success_rate": 0.3
+    }
+  }
+}

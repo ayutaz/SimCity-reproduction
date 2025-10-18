@@ -1,0 +1,87 @@
+{
+  "test_name": "Phase 8.1-8.5 180-Step Final Validation",
+  "steps": 180,
+  "final_indicators": {
+    "gdp": 20261040.28640153,
+    "unemployment_rate": 0.0,
+    "inflation": 0.008601030361455769,
+    "investment": 0.0,
+    "gini": 0.40568271683276236
+  },
+  "average_indicators": {
+    "gdp": 9693200.107985867,
+    "unemployment_rate": 0.015068342151675487,
+    "inflation": 0.00188787536287115,
+    "investment": 28609.023265020725
+  },
+  "phase8_validations": {
+    "phase8_2_unemployment_variability": {
+      "volatility": 0.019180633147113595,
+      "avg_rate": 0.015068342151675487,
+      "status": "✅ PASS",
+      "description": "Unemployment should vary over time (not stuck at 0% or 100%)"
+    },
+    "phase8_3_price_variations": {
+      "goods_count": 10,
+      "avg_variation_pct": 95.83193255476975,
+      "max_variation_pct": 218.48080554769749,
+      "status": "✅ PASS",
+      "sample_details": {
+        "clothing_casual": {
+          "min": 100.0,
+          "max": 175.61448000000001,
+          "variation_pct": 75.61448000000001
+        },
+        "other_personal_care": {
+          "min": 100.0,
+          "max": 146.06244,
+          "variation_pct": 46.06244000000001
+        },
+        "trans_vehicle_economy": {
+          "min": 100.0,
+          "max": 108.0,
+          "variation_pct": 8.0
+        },
+        "housing_luxury": {
+          "min": 100.0,
+          "max": 300.0,
+          "variation_pct": 200.0
+        },
+        "trans_public": {
+          "min": 52.3172,
+          "max": 166.62024,
+          "variation_pct": 218.48080554769749
+        }
+      }
+    },
+    "phase8_4_investment_non_zero": {
+      "total_steps": 180,
+      "non_zero_steps": 71,
+      "non_zero_ratio": 0.39444444444444443,
+      "avg_investment": 28609.023265020725,
+      "status": "✅ PASS",
+      "sample_values": [
+        0.0,
+        1801.9095450045206,
+        3194.1802950045458,
+        5404.3744506944895,
+        8782.40790285654,
+        12793.054157046226,
+        18528.38705612035,
+        22857.860528280988,
+        29408.2919016486,
+        34273.722428671346
+      ]
+    },
+    "phase8_5_consumption_smoothing": {
+      "volatility": 0.01169164184579663,
+      "avg_consumption": 9659607.751387514,
+      "status": "✅ PASS",
+      "description": "Lower volatility indicates better consumption smoothing"
+    }
+  },
+  "llm_costs": {
+    "total_cost": 0,
+    "total_calls": 0
+  }
+}

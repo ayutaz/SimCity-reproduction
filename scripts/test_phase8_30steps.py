@@ -144,17 +144,23 @@ def main():
                     else 0
                 ),
                 "avg_investment": (
-                    sum(investment_data) / len(investment_data) if investment_data else 0
+                    sum(investment_data) / len(investment_data)
+                    if investment_data
+                    else 0
                 ),
                 "status": (
-                    "✅ PASS" if non_zero_investment_count > len(investment_data) * 0.3 else "❌ FAIL"
+                    "✅ PASS"
+                    if non_zero_investment_count > len(investment_data) * 0.3
+                    else "❌ FAIL"
                 ),
                 "sample_values": investment_data[:10],
             },
             "phase8_5_consumption_smoothing": {
                 "volatility": consumption_volatility,
                 "avg_consumption": (
-                    sum(consumption_data) / len(consumption_data) if consumption_data else 0
+                    sum(consumption_data) / len(consumption_data)
+                    if consumption_data
+                    else 0
                 ),
                 "status": "✅ PASS" if consumption_volatility < 0.3 else "❌ FAIL",
                 "description": "Lower volatility indicates better consumption smoothing",

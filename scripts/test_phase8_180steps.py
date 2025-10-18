@@ -100,13 +100,10 @@ def main():
     # 失業率の変動性（Phase 8.2検証）
     unemployment_data = results["history"]["unemployment_rate"]
     if len(unemployment_data) > 1:
-        unemployment_volatility = (
-            sum(
-                abs(unemployment_data[i] - unemployment_data[i - 1])
-                for i in range(1, len(unemployment_data))
-            )
-            / (len(unemployment_data) - 1)
-        )
+        unemployment_volatility = sum(
+            abs(unemployment_data[i] - unemployment_data[i - 1])
+            for i in range(1, len(unemployment_data))
+        ) / (len(unemployment_data) - 1)
     else:
         unemployment_volatility = 0.0
 
@@ -186,14 +183,18 @@ def main():
                 ),
                 "avg_investment": avg_investment,
                 "status": (
-                    "✅ PASS" if non_zero_investment_count > len(investment_data) * 0.3 else "❌ FAIL"
+                    "✅ PASS"
+                    if non_zero_investment_count > len(investment_data) * 0.3
+                    else "❌ FAIL"
                 ),
                 "sample_values": investment_data[:10],
             },
             "phase8_5_consumption_smoothing": {
                 "volatility": consumption_volatility,
                 "avg_consumption": (
-                    sum(consumption_data) / len(consumption_data) if consumption_data else 0
+                    sum(consumption_data) / len(consumption_data)
+                    if consumption_data
+                    else 0
                 ),
                 "status": "✅ PASS" if consumption_volatility < 0.3 else "❌ FAIL",
                 "description": "Lower volatility indicates better consumption smoothing",

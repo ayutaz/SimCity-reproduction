@@ -465,7 +465,9 @@ def calculate_effective_labor(
 
         # スキルマッチング効率を計算（ベクトル演算）
         # 各スキルの比率を計算（上限1.0）
-        skill_ratios = np.minimum(1.0, actual_levels / np.maximum(0.01, required_levels))
+        skill_ratios = np.minimum(
+            1.0, actual_levels / np.maximum(0.01, required_levels)
+        )
 
         # 平均効率
         efficiency = np.mean(skill_ratios) if len(skill_ratios) > 0 else 0.5

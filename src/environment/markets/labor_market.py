@@ -156,11 +156,17 @@ class LaborMarket:
         }
 
         # ステップ2: マッチングラウンドを反復（最大で選択肢数分）
-        max_rounds = max(len(prefs) for prefs in seeker_preferences.values()) if seeker_preferences else 0
+        max_rounds = (
+            max(len(prefs) for prefs in seeker_preferences.values())
+            if seeker_preferences
+            else 0
+        )
 
         for _ in range(max_rounds):
             # 各企業への応募を集計
-            applications: dict[int, list[tuple[int, float]]] = {}  # firm_id: [(household_id, score), ...]
+            applications: dict[
+                int, list[tuple[int, float]]
+            ] = {}  # firm_id: [(household_id, score), ...]
 
             for seeker in job_seekers:
                 if seeker.household_id in matched_seekers:
@@ -229,7 +235,7 @@ class LaborMarket:
                     # 応募者 > 求人枠: 抽選で選択
                     # スコアの高い順にソートしてから抽選（公平性とパフォーマンスのバランス）
                     applicants_sorted = sorted(applicants, key=lambda x: -x[1])
-                    selected = applicants_sorted[:posting.num_openings]
+                    selected = applicants_sorted[: posting.num_openings]
 
                     for household_id, score in selected:
                         match = JobMatch(
@@ -244,7 +250,10 @@ class LaborMarket:
                         self.total_matches += 1
 
                     # 落選者は次の選択肢へ
-                    rejected_ids = [household_id for household_id, _ in applicants_sorted[posting.num_openings:]]
+                    rejected_ids = [
+                        household_id
+                        for household_id, _ in applicants_sorted[posting.num_openings :]
+                    ]
                     for household_id in rejected_ids:
                         seeker_choice_index[household_id] += 1
 

@@ -1,0 +1,81 @@
+{
+  "metadata": {
+    "steps": 50,
+    "households": 200,
+    "firms": 50,
+    "seed": 42,
+    "execution_time": 1.3900411128997803
+  },
+  "validation_results": {
+    "phillips_curve": {
+      "phenomenon": "Phillips Curve",
+      "correlation": NaN,
+      "p_value": NaN,
+      "valid": false,
+      "expected": "r < 0 (negative correlation)",
+      "description": "Unemployment rate vs Inflation rate"
+    },
+    "okuns_law": {
+      "phenomenon": "Okun's Law",
+      "correlation": -0.34063061217775514,
+      "p_value": 0.016621844355271746,
+      "valid": true,
+      "expected": "r < 0 (negative correlation)",
+      "description": "Unemployment change vs GDP growth rate"
+    },
+    "beveridge_curve": {
+      "phenomenon": "Beveridge Curve",
+      "correlation": NaN,
+      "p_value": NaN,
+      "valid": false,
+      "expected": "r < -0.5 (strong negative correlation)",
+      "description": "Unemployment rate vs Vacancy rate"
+    },
+    "price_elasticity": {
+      "phenomenon": "Price Elasticity",
+      "necessities": {
+        "mean_elasticity": 42592872809.102295,
+        "valid": false,
+        "expected": "-1 < E < 0"
+      },
+      "luxuries": {
+        "mean_elasticity": 2007177222536.4856,
+        "valid": false,
+        "expected": "E < -1"
+      },
+      "valid": false,
+      "description": "Price change vs Demand change"
+    },
+    "engels_law": {
+      "phenomenon": "Engel's Law",
+      "correlation": -0.01622447022405133,
+      "p_value": 0.1961120415861536,
+      "valid": false,
+      "expected": "r < 0 (negative correlation)",
+      "description": "Income vs Food expenditure ratio"
+    },
+    "investment_volatility": {
+      "phenomenon": "Investment Volatility",
+      "investment_std": 0.0,
+      "consumption_std": 1503158.695356575,
+      "ratio": 0.0,
+      "valid": false,
+      "expected": "std(Investment) > std(Consumption)",
+      "description": "Volatility comparison"
+    },
+    "price_stickiness": {
+      "phenomenon": "Price Stickiness",
+      "price_change_frequency": 0.9958315240990012,
+      "demand_change_frequency": 0.8571428571428571,
+      "valid": false,
+      "expected": "Price change frequency < Demand change frequency",
+      "description": "Price adjustment delay"
+    },
+    "summary": {
+      "total": 7,
+      "valid": 1,
+      "invalid": 6,
+      "success_rate": 0.14285714285714285
+    }
+  }
+}

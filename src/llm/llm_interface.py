@@ -312,9 +312,7 @@ class LLMInterface:
             キャッシュヒット・ミス統計
         """
         total_requests = self._cache_hits + self._cache_misses
-        hit_rate = (
-            self._cache_hits / total_requests if total_requests > 0 else 0.0
-        )
+        hit_rate = self._cache_hits / total_requests if total_requests > 0 else 0.0
 
         return {
             "cache_hits": self._cache_hits,
@@ -386,9 +384,7 @@ class LLMInterface:
 
                     arguments = json.loads(message.function_call.arguments)
 
-                    logger.debug(
-                        f"Async LLM function call: {function_name}"
-                    )
+                    logger.debug(f"Async LLM function call: {function_name}")
 
                     return {
                         "function_name": function_name,
@@ -413,7 +409,9 @@ class LLMInterface:
 
                     await asyncio.sleep(self.retry_delay)
                 else:
-                    logger.error(f"Async API call failed after {self.max_retries} attempts")
+                    logger.error(
+                        f"Async API call failed after {self.max_retries} attempts"
+                    )
                     raise
 
     async def batch_function_calls(
@@ -453,15 +451,19 @@ class LLMInterface:
         for i, response in enumerate(responses):
             if isinstance(response, Exception):
                 logger.error(f"Batch request {i} failed: {response}")
-                valid_responses.append({
-                    "function_name": None,
-                    "arguments": {},
-                    "error": str(response),
-                })
+                valid_responses.append(
+                    {
+                        "function_name": None,
+                        "arguments": {},
+                        "error": str(response),
+                    }
+                )
             else:
                 valid_responses.append(response)
 
-        logger.info(f"Batch processing completed: {len(valid_responses)}/{len(requests)} successful")
+        logger.info(
+            f"Batch processing completed: {len(valid_responses)}/{len(requests)} successful"
+        )
 
         return valid_responses
 

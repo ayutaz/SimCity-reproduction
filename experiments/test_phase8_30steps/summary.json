@@ -1,0 +1,75 @@
+{
+  "test_name": "Phase 8.1-8.5 30-Step Validation",
+  "steps": 30,
+  "final_indicators": {
+    "gdp": 2399369.2518758834,
+    "unemployment_rate": 0.0,
+    "inflation": 0.0,
+    "investment": 121371.07664399018,
+    "gini": 0.4260445996333746
+  },
+  "phase8_validations": {
+    "phase8_3_price_variations": {
+      "goods_count": 10,
+      "avg_variation_pct": 75.64433681671653,
+      "max_variation_pct": 234.18230563002675,
+      "status": "✅ PASS",
+      "sample_details": {
+        "clothing_casual": {
+          "min": 100.0,
+          "max": 100.0,
+          "variation_pct": 0.0
+        },
+        "trans_vehicle_economy": {
+          "min": 100.0,
+          "max": 100.0,
+          "variation_pct": 0.0
+        },
+        "other_personal_care": {
+          "min": 58.593680000000006,
+          "max": 100.0,
+          "variation_pct": 70.66687055668801
+        },
+        "food_gourmet": {
+          "min": 89.52000000000001,
+          "max": 299.15999999999997,
+          "variation_pct": 234.18230563002675
+        },
+        "clothing_basic": {
+          "min": 100.0,
+          "max": 100.0,
+          "variation_pct": 0.0
+        }
+      }
+    },
+    "phase8_4_investment_non_zero": {
+      "total_steps": 30,
+      "non_zero_steps": 29,
+      "non_zero_ratio": 0.9666666666666667,
+      "avg_investment": 63936.40412550469,
+      "status": "✅ PASS",
+      "sample_values": [
+        0.0,
+        1801.9095450045206,
+        3910.0298918613844,
+        6115.234957262834,
+        9330.22545876116,
+        12586.341905279769,
+        17139.2676248184,
+        20999.88281798572,
+        26868.710982395853,
+        31811.265096689105
+      ]
+    },
+    "phase8_5_consumption_smoothing": {
+      "volatility": 0.0796287319532626,
+      "avg_consumption": 966824.2015956974,
+      "status": "✅ PASS",
+      "description": "Lower volatility indicates better consumption smoothing"
+    }
+  },
+  "llm_costs": {
+    "total_cost": 0,
+    "total_calls": 0
+  }
+}

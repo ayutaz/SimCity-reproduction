@@ -82,7 +82,7 @@ def main():
 
     # 結果サマリー
     logger.info("=== 30ステップ検証テスト完了 ===")
-    logger.info(f"Total time: {total_time:.2f}s ({total_time/steps:.2f}s/step)")
+    logger.info(f"Total time: {total_time:.2f}s ({total_time / steps:.2f}s/step)")
     logger.info(f"Final GDP: ${results[-1]['gdp']:,.2f}")
     logger.info(f"Final Unemployment: {results[-1]['unemployment_rate']:.2%}")
     logger.info(f"Final Inflation: {results[-1]['inflation']:.4%}")

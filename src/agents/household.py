@@ -579,9 +579,7 @@ Consumption Preferences:
 
         # Phase 10.2: 統合意思決定の場合は処理して最初の行動を返す
         if decision.get("function_name") == "decide_all_integrated":
-            actions = self.process_integrated_decision(
-                decision["arguments"], step
-            )
+            actions = self.process_integrated_decision(decision["arguments"], step)
             # 最初の行動を返す（後続の行動はメモリに保存）
             if actions:
                 # 残りの行動をメモリに記録
