@@ -532,4 +532,4 @@ uv run python scripts/run_baseline.py --steps 30 --validate
 
 ---
 
-**Note**: このドキュメントは Phase 9完了時点（2025-10-14）の情報です。実装状況に応じて更新してください。
+**Note**: このドキュメントは Phase 10完了時点（2025-10-19）の情報です。実装状況に応じて更新してください。
