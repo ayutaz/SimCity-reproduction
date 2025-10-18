@@ -135,6 +135,10 @@ class GoodsMarket:
             good_listings = listings_by_good.get(good_id, [])
             good_orders = orders_by_good.get(good_id, [])
 
+            # Phase 8.1.2修正: マッチング前に需要を記録（マッチング後は注文量が0になる）
+            total_demanded_before = sum(order.quantity for order in good_orders)
+            total_supplied_before = sum(listing.quantity for listing in good_listings)
+
             # 価格順にソート
             sorted_listings = sorted(good_listings, key=lambda x: x.price)
             sorted_orders = sorted(good_orders, key=lambda x: -x.max_price)
@@ -155,9 +159,9 @@ class GoodsMarket:
                     -10:
                 ]
 
-            # 未充足需要と未売却在庫を記録
-            total_supplied = sum(listing.quantity for listing in good_listings)
-            total_demanded = sum(order.quantity for order in good_orders)
+            # 未充足需要と未売却在庫を記録（マッチング前の値を使用）
+            total_supplied = total_supplied_before
+            total_demanded = total_demanded_before
             total_sold = sum(txn.quantity for txn in good_transactions)
 
             self.unmet_demand[good_id] = max(0, total_demanded - total_sold)

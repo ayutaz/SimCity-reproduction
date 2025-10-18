@@ -192,7 +192,7 @@ class TestEconomicPhenomenaValidator:
         validator = EconomicPhenomenaValidator(sample_data)
         results = validator.validate_all()
 
-        # Check all phenomena are present
+        # Check all phenomena are present (now 10 phenomena)
         assert "phillips_curve" in results
         assert "okuns_law" in results
         assert "beveridge_curve" in results
@@ -200,15 +200,18 @@ class TestEconomicPhenomenaValidator:
         assert "engels_law" in results
         assert "investment_volatility" in results
         assert "price_stickiness" in results
+        assert "wage_price_spiral" in results
+        assert "capital_accumulation" in results
+        assert "consumption_smoothing" in results
         assert "summary" in results
 
         # Check summary
         summary = results["summary"]
-        assert summary["total"] == 7
+        assert summary["total"] == 10
         assert "valid" in summary
         assert "invalid" in summary
         assert "success_rate" in summary
-        assert summary["valid"] + summary["invalid"] == 7
+        assert summary["valid"] + summary["invalid"] == 10
 
     def test_generate_report(self, sample_data, tmp_path):
         """Test generating validation report"""

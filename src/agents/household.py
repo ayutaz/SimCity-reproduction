@@ -92,6 +92,14 @@ class HouseholdAgent(BaseAgent):
         self.consumption = getattr(profile, "cash", 50000.0) * 0.1  # 10%を消費
         self.food_expenditure = self.consumption * 0.3  # 消費の30%を食料
 
+        # Phase 8.1: 月間支出追跡（経済現象検証用）
+        self.total_spending = 0.0  # 月間総支出
+        self.food_spending = 0.0  # 月間食料支出
+        self.purchased_goods = {}  # 購入した財 {good_id: quantity}
+
+        # Phase 8.1: LLM消費決定の保存（財市場で使用）
+        self.pending_consumption_decision = None  # {good_id: quantity} の辞書
+
         # Phase 10.3: 静的プロファイル部分をキャッシュ
         self._static_profile_cached = False
         self._cache_static_profile_info()
@@ -636,6 +644,38 @@ Consumption Preferences:
                 "reasoning": f"Heuristic: Save {self.heuristic_savings_rate:.0%} of monthly income",
             },
         }
+
+    def reset_monthly_spending(self):
+        """
+        月間支出をリセット（Phase 8.1: 経済現象検証用）
+
+        毎月のステップ開始時に呼び出される
+        """
+        self.total_spending = 0.0
+        self.food_spending = 0.0
+        self.purchased_goods = {}
+
+    def record_purchase(self, good_id: str, quantity: float, price: float):
+        """
+        購入を記録（Phase 8.1: 経済現象検証用）
+
+        Args:
+            good_id: 財のID
+            quantity: 購入数量
+            price: 単価
+        """
+        cost = quantity * price
+        self.total_spending += cost
+
+        # 食料財の判定（good_idに"food"が含まれる場合）
+        if "food" in good_id.lower():
+            self.food_spending += cost
+
+        # 購入数量を記録
+        if good_id in self.purchased_goods:
+            self.purchased_goods[good_id] += quantity
+        else:
+            self.purchased_goods[good_id] = quantity
 
 
 class HouseholdProfileGenerator:

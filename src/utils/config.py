@@ -250,6 +250,11 @@ def get_api_key(env_var: str = "OPENAI_API_KEY") -> str:
     Raises:
         ValueError: APIキーが見つからない場合
     """
+    # .envファイルから環境変数をロード
+    from dotenv import load_dotenv
+
+    load_dotenv()
+
     api_key = os.getenv(env_var)
     if not api_key:
         raise ValueError(

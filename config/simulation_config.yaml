@@ -58,7 +58,8 @@ economy:
 # 市場設定
 markets:
   labor:
-    matching_probability: 1.0  # マッチング確率（Phase 7.9: 0.9 → 1.0、確率的拒否を完全に排除）
+    matching_probability: 0.6  # マッチング確率（Phase 8.2: 1.0 → 0.6、失業率の変動性を確保）
+    turnover_rate: 0.05  # 月次離職率（Phase 8.2: 5%の従業員が毎月自発的に離職）
     minimum_wage: 1000  # 最低賃金
 
   goods:

@@ -71,6 +71,10 @@ class Simulation:
             max_tokens=2000,
         )
 
+        # Phase 8.4: 前期の資本ストック（投資計算用）
+        # エージェント初期化前に必要（企業作成時に使用）
+        self.prev_capital_stocks = {}
+
         # エージェントの初期化
         self._initialize_agents()
 
@@ -184,12 +188,15 @@ class Simulation:
 
                 self.firms.append(firm_agent)
 
+                # Phase 8.4: 初期資本を記録（投資計算の基準値）
+                self.prev_capital_stocks[profile.id] = profile.capital
+
                 logger.info(
                     f"  Firm {i + 1}: {profile.name} ({profile.goods_type}), "
                     f"Capital: ${profile.cash:.2f}, TFP: {profile.total_factor_productivity:.2f}"
                 )
 
-            logger.info(f"Initialized {len(self.firms)} firms")
+            logger.info(f"Initialized {len(self.firms)} firms with initial capital tracking")
 
         except FileNotFoundError as e:
             logger.error(f"Failed to load firm templates: {e}")
@@ -289,21 +296,21 @@ class Simulation:
                 self.state.phase = "development"
                 logger.info("Phase transition: move_in -> development")
 
-        # シミュレーションループ（簡略版）
-        # 実際のエージェント実装はPhase 2で行う
+        # シミュレーションループ
+        # Phase 8.1修正: Revision Stageを最初に移動（LLM決定を同じステップで使用）
 
-        # Stage 1: Production and Trading
+        # Stage 1: Revision Stage (エージェント意思決定)
+        self._revision_stage()
+
+        # Stage 2: Production and Trading
         self._production_and_trading_stage()
 
-        # Stage 2: Taxation and Dividend
+        # Stage 3: Taxation and Dividend
         self._taxation_and_dividend_stage()
 
-        # Stage 3: Metabolic Stage
+        # Stage 4: Metabolic Stage
         if self.state.phase == "move_in":
             self._metabolic_stage()
-
-        # Stage 4: Revision Stage (エージェント意思決定)
-        self._revision_stage()
 
         # マクロ経済指標の計算
         indicators = self._calculate_indicators()
@@ -385,9 +392,7 @@ class Simulation:
                 f"Wage payments: ${total_wages_paid:.2f} paid to {sum(len(f.profile.employees) for f in self.firms)} employees"
             )
 
-        # 企業の投資指標を0で初期化（LLM決定で上書きされる）
-        for firm in self.firms:
-            firm.investment = 0.0
+        # Phase 8.4: 投資の初期化を削除（資本変化から自動計算するため不要）
 
         # 1. 企業が生産して出品
         listings = []
@@ -413,41 +418,94 @@ class Simulation:
                 )
                 listings.append(listing)
 
-        # 2. 世帯が消費注文
+        # 2. 世帯が消費注文（Phase 8.1: LLM決定を使用）
         orders = []
         for household in self.households:
-            # 消費予算（月収の80%）
-            budget = household.profile.monthly_income * 0.8
+            # Phase 8.5: 消費平滑化（バッファ・ストック貯蓄モデル）
+            # 現金保有量に応じて消費率を調整し、恒常所得仮説を簡易実装
+            if household.profile.monthly_income > 0:
+                cash_to_income_ratio = household.profile.cash / max(household.profile.monthly_income, 500.0)
+
+                if cash_to_income_ratio > 3.0:
+                    # 高い現金準備（月収の3倍以上）→ 消費増加（85%）
+                    consumption_rate = 0.85
+                    logger.debug(f"Household {household.profile.id}: High cash reserves (ratio={cash_to_income_ratio:.2f}), consuming 85%")
+                elif cash_to_income_ratio < 1.0:
+                    # 低い現金準備（月収未満）→ 消費抑制・貯蓄重視（75%）
+                    consumption_rate = 0.75
+                    logger.debug(f"Household {household.profile.id}: Low cash reserves (ratio={cash_to_income_ratio:.2f}), consuming 75%")
+                else:
+                    # 通常の現金準備 → 標準消費（80%）
+                    consumption_rate = 0.80
+            else:
+                # 所得がない場合でも、現金があれば最低限消費可能
+                consumption_rate = 0.5  # 現金の50%まで消費可能
+
+            budget = household.profile.monthly_income * consumption_rate
+
+            # 所得がなくても現金がある場合は最低限の消費を許可
+            if budget <= 0 and household.profile.cash > 100:
+                budget = min(household.profile.cash * consumption_rate, household.profile.cash * 0.3)
+
             if budget <= 0:
                 continue
 
-            # 簡略版: 利用可能な財からランダムに1つ選択
-            if listings:
-                # ランダムに財を選択
-                target_listing = random.choice(listings)
+            # Phase 8.1: LLM消費決定を使用（保存された決定がある場合）
+            if hasattr(household, "pending_consumption_decision") and household.pending_consumption_decision:
+                # LLM決定から注文を作成
+                llm_goods = household.pending_consumption_decision
+                remaining_budget = budget
 
-                # 購入数量を決定（予算内で）
-                affordable_qty = budget / target_listing.price
-                order_qty = min(affordable_qty, target_listing.quantity)
+                for good_id, desired_qty in llm_goods.items():
+                    if remaining_budget <= 0:
+                        break  # 予算を使い切った
 
-                if order_qty > 0:
-                    order = GoodOrder(
-                        household_id=household.profile.id,
-                        good_id=target_listing.good_id,
-                        quantity=order_qty,
-                        max_price=target_listing.price * 1.2,  # 20%まで高く払える
-                    )
-                    orders.append(order)
+                    # この財の出品を探す
+                    matching_listings = [l for l in listings if l.good_id == good_id]
+                    if not matching_listings:
+                        continue  # この財の出品がない
+
+                    # 最も安い出品を選択
+                    target_listing = min(matching_listings, key=lambda x: x.price)
+
+                    # 購入数量を決定（予算内かつLLM希望数量以下）
+                    affordable_qty = remaining_budget / target_listing.price
+                    order_qty = min(affordable_qty, target_listing.quantity, desired_qty)
+
+                    if order_qty > 0:
+                        order = GoodOrder(
+                            household_id=household.profile.id,
+                            good_id=target_listing.good_id,
+                            quantity=order_qty,
+                            max_price=target_listing.price * 1.2,  # 20%まで高く払える
+                        )
+                        orders.append(order)
+                        remaining_budget -= order_qty * target_listing.price
+
+                # 決定を使用したのでクリア
+                household.pending_consumption_decision = None
+
+            else:
+                # フォールバック: LLM決定がない場合はランダム選択
+                if listings:
+                    target_listing = random.choice(listings)
+                    affordable_qty = budget / target_listing.price
+                    order_qty = min(affordable_qty, target_listing.quantity)
+
+                    if order_qty > 0:
+                        order = GoodOrder(
+                            household_id=household.profile.id,
+                            good_id=target_listing.good_id,
+                            quantity=order_qty,
+                            max_price=target_listing.price * 1.2,
+                        )
+                        orders.append(order)
 
         # 3. 市場マッチング
         transactions = self.goods_market.match(listings, orders)
 
         # 4. 取引結果を反映
         total_consumption = 0.0
-
-        # 財の種類判定用にインポート
-        from src.data.goods_types import get_good
-        from src.models.data_models import GoodCategory
 
         for txn in transactions:
             # 企業側: 収入増加、在庫減少
@@ -458,7 +516,7 @@ class Simulation:
                     firm.profile.sales_quantity += txn.quantity
                     break
 
-            # 世帯側: 支出記録
+            # 世帯側: 支出記録（Phase 8.1: 新しいrecord_purchase()メソッドを使用）
             for household in self.households:
                 if household.profile.id == txn.household_id:
                     # consumption属性を追加（動的）
@@ -467,18 +525,12 @@ class Simulation:
                     household.consumption += txn.total_value
                     total_consumption += txn.total_value
 
-                    # 食料支出と総支出を追跡
-                    if not hasattr(household, "food_spending"):
-                        household.food_spending = 0.0
-                    if not hasattr(household, "total_spending"):
-                        household.total_spending = 0.0
-
-                    household.total_spending += txn.total_value
-
-                    # 財が食料カテゴリかチェック
-                    good_def = get_good(txn.good_id)
-                    if good_def and good_def.category == GoodCategory.FOOD:
-                        household.food_spending += txn.total_value
+                    # Phase 8.1: 購入を記録（食料支出も自動的に記録される）
+                    household.record_purchase(
+                        good_id=txn.good_id,
+                        quantity=txn.quantity,
+                        price=txn.price
+                    )
 
                     break
 
@@ -754,6 +806,42 @@ class Simulation:
             logger.info(
                 f"Labor market: No matching ({len(job_postings)} postings, {len(job_seekers)} seekers)"
             )
+
+        # Phase 8.2: 離職メカニズム（月次離職率による自発的離職）
+        turnover_rate = getattr(self.config.markets.labor, "turnover_rate", 0.05)
+        if turnover_rate > 0:
+            # 全雇用者をリストアップ
+            employed_households = [
+                h for h in self.households
+                if h.profile.employment_status == EmploymentStatus.EMPLOYED
+            ]
+
+            if employed_households:
+                # 離職者数を計算（確率的）
+                num_quits = int(len(employed_households) * turnover_rate)
+                if num_quits > 0:
+                    # ランダムに離職者を選択
+                    quitters = random.sample(employed_households, k=num_quits)
+
+                    for household in quitters:
+                        # 雇用主から削除
+                        employer_id = household.profile.employer_id
+                        for firm in self.firms:
+                            if firm.profile.id == employer_id:
+                                if household.profile.id in firm.profile.employees:
+                                    firm.profile.employees.remove(household.profile.id)
+                                    firm.profile.job_openings += 1  # 求人枠を補充
+                                break
+
+                        # 雇用状態を失業に変更
+                        household.profile.employment_status = EmploymentStatus.UNEMPLOYED
+                        household.profile.employer_id = None
+                        household.profile.wage = 0.0
+
+                    logger.info(
+                        f"Phase 8.2 Turnover: {num_quits} employees voluntarily quit "
+                        f"({turnover_rate * 100:.1f}% turnover rate)"
+                    )
 
         # 6. 金融市場統合
         self._financial_stage()
@@ -1064,10 +1152,10 @@ class Simulation:
         arguments = decision.get("arguments", {})
 
         if function_name == "decide_consumption":
-            # 消費決定は次のProduction & Trading Stageで処理されるため、
-            # ここでは消費嗜好を更新するのみ
+            # Phase 8.1: LLM消費決定を保存（次のProduction & Trading Stageで使用）
             goods = arguments.get("goods", {})
-            logger.debug(f"Household {household.profile.id} decided to consume: {goods}")
+            household.pending_consumption_decision = goods
+            logger.debug(f"Household {household.profile.id} saved consumption decision: {goods}")
 
         elif function_name == "labor_action":
             # Phase 1.4: 労働市場行動（辞職処理を追加）
@@ -1144,26 +1232,63 @@ class Simulation:
             capacity = firm.calculate_production_capacity(self.households)
             actual_production = min(target_production, capacity)
 
-            # Phase 1.1: 需給バランスに応じた価格調整
+            # Phase 8.3: 強化された需給バランスに応じた価格調整
             # 在庫と販売量の比率から需給バランスを判定
             if firm.profile.sales_quantity > 0:
                 inventory_sales_ratio = firm.profile.inventory / firm.profile.sales_quantity
             else:
                 inventory_sales_ratio = 1.0  # デフォルト
 
-            # 在庫過剰（販売量の2倍以上）→ 価格を5-10%下げる
-            if inventory_sales_ratio > 2.0:
-                price_adjustment = 0.90  # 10%値下げ
-                price = price * price_adjustment
-                logger.debug(f"Firm {firm.profile.id}: Inventory excess, lowering price by 10%")
-            # 在庫不足（販売量の0.5倍以下）→ 価格を5-10%上げる
-            elif inventory_sales_ratio < 0.5 and firm.profile.inventory < 10.0:
-                price_adjustment = 1.10  # 10%値上げ
-                price = price * price_adjustment
-                logger.debug(f"Firm {firm.profile.id}: Inventory shortage, raising price by 10%")
+            # Phase 8.3: 需要データを取得（goods_marketから）
+            market_demands = self.goods_market.get_market_demands()
+            firm_demand = market_demands.get(firm.profile.goods_type, 0.0)
 
-            # 価格制約: 最低50.0、最高200.0
-            price = max(50.0, min(200.0, price))
+            # Phase 8.3: より敏感で段階的な価格調整メカニズム
+            # 在庫過剰レベルに応じた価格調整
+            if inventory_sales_ratio > 3.0:
+                # 極度の在庫過剰 → 大幅値下げ（20%）
+                price_adjustment = 0.80
+                logger.debug(f"Firm {firm.profile.id}: Severe inventory excess (ratio={inventory_sales_ratio:.2f}), lowering price by 20%")
+            elif inventory_sales_ratio > 1.5:
+                # 在庫過剰 → 中程度の値下げ（15%）
+                price_adjustment = 0.85
+                logger.debug(f"Firm {firm.profile.id}: Inventory excess (ratio={inventory_sales_ratio:.2f}), lowering price by 15%")
+            elif inventory_sales_ratio > 1.0:
+                # 軽度の在庫過剰 → 小幅値下げ（8%）
+                price_adjustment = 0.92
+                logger.debug(f"Firm {firm.profile.id}: Slight inventory excess (ratio={inventory_sales_ratio:.2f}), lowering price by 8%")
+            # 在庫不足レベルに応じた価格調整
+            elif inventory_sales_ratio < 0.3 and firm.profile.inventory < 10.0:
+                # 極度の在庫不足 → 大幅値上げ（20%）
+                price_adjustment = 1.20
+                logger.debug(f"Firm {firm.profile.id}: Severe inventory shortage (ratio={inventory_sales_ratio:.2f}), raising price by 20%")
+            elif inventory_sales_ratio < 0.6 and firm.profile.inventory < 20.0:
+                # 在庫不足 → 中程度の値上げ（15%）
+                price_adjustment = 1.15
+                logger.debug(f"Firm {firm.profile.id}: Inventory shortage (ratio={inventory_sales_ratio:.2f}), raising price by 15%")
+            elif inventory_sales_ratio < 0.8:
+                # 軽度の在庫不足 → 小幅値上げ（8%）
+                price_adjustment = 1.08
+                logger.debug(f"Firm {firm.profile.id}: Slight inventory shortage (ratio={inventory_sales_ratio:.2f}), raising price by 8%")
+            else:
+                # 適正在庫 → 需要に応じた微調整
+                if firm_demand > firm.profile.sales_quantity * 1.5:
+                    # 需要が供給を大きく上回る → 小幅値上げ（5%）
+                    price_adjustment = 1.05
+                    logger.debug(f"Firm {firm.profile.id}: High demand (demand={firm_demand:.2f}, sales={firm.profile.sales_quantity:.2f}), raising price by 5%")
+                elif firm_demand > 0 and firm_demand < firm.profile.sales_quantity * 0.5:
+                    # 需要が供給を大きく下回る → 小幅値下げ（5%）
+                    price_adjustment = 0.95
+                    logger.debug(f"Firm {firm.profile.id}: Low demand (demand={firm_demand:.2f}, sales={firm.profile.sales_quantity:.2f}), lowering price by 5%")
+                else:
+                    # 需給バランス良好 → 価格維持
+                    price_adjustment = 1.0
+
+            price = price * price_adjustment
+
+            # Phase 8.3: 価格制約を緩和（最低30.0、最高300.0）
+            # より広い価格変動を許容して、価格メカニズムが機能しやすくする
+            price = max(30.0, min(300.0, price))
 
             firm.profile.production_quantity = actual_production
             firm.profile.price = price
@@ -1458,9 +1583,25 @@ class Simulation:
         total_consumption = sum(
             getattr(h, "consumption", 0.0) for h in self.households
         )
-        total_investment = sum(
-            getattr(f, "investment", 0.0) for f in self.firms
-        )
+
+        # Phase 8.4: 投資を資本ストック変化から計算（経済学的に正しい方法）
+        # Investment = Δ Capital = 現在の資本 - 前期の資本
+        total_investment = 0.0
+        for firm in self.firms:
+            current_capital = firm.profile.capital
+            prev_capital = self.prev_capital_stocks.get(firm.profile.id, current_capital)
+
+            # 投資 = 資本の変化
+            firm_investment = current_capital - prev_capital
+            total_investment += firm_investment
+
+            # Phase 8.4: firmオブジェクトにも記録（後方互換性）
+            firm.investment = firm_investment
+
+            # 次のステップのために現在の資本を保存（メインステップのみ）
+            if update_prev_price_index:
+                self.prev_capital_stocks[firm.profile.id] = current_capital
+
         government_spending = (
             getattr(self.government.state, "expenditure", 0.0)
             if self.government
@@ -1644,10 +1785,9 @@ class Simulation:
         ]
         self.state.history["household_incomes"].append(household_incomes)
 
-        # 次のステップのために支出をリセット
+        # Phase 8.1: 次のステップのために支出をリセット（新しいメソッドを使用）
         for household in self.households:
-            household.food_spending = 0.0
-            household.total_spending = 0.0
+            household.reset_monthly_spending()
 
     def save_state(self, filepath: str | Path):
         """

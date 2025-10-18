@@ -404,6 +404,148 @@ class EconomicPhenomenaValidator:
 
         return result
 
+    def validate_wage_price_spiral(self) -> dict:
+        """
+        Wage-Price Spiral検証: 賃金とインフレ率の正の相関
+
+        Returns:
+            {
+                "correlation": float,
+                "p_value": float,
+                "valid": bool (r > 0 and p < 0.05),
+            }
+        """
+        logger.info("Validating Wage-Price Spiral...")
+
+        # 企業数と従業員数が記録されていないため、近似を使用
+        # 失業率の低下 → 賃金上昇 → インフレ上昇
+        unemployment = np.array(self.history["unemployment_rate"])
+        inflation = np.array(self.history["inflation"])
+
+        # 失業率の逆数（労働市場の逼迫度）とインフレ率の相関
+        # 失業率が低い → 賃金圧力が高い → インフレ上昇
+        labor_tightness = 1 - unemployment  # 就業率
+
+        # 相関係数とp値を計算
+        correlation, p_value = stats.pearsonr(labor_tightness, inflation)
+
+        valid = correlation > 0 and p_value < 0.05
+
+        result = {
+            "phenomenon": "Wage-Price Spiral",
+            "correlation": float(correlation),
+            "p_value": float(p_value),
+            "valid": bool(valid),
+            "expected": "r > 0 (positive correlation)",
+            "description": "Labor market tightness vs Inflation rate",
+        }
+
+        logger.info(
+            f"Wage-Price Spiral: r={correlation:.4f}, p={p_value:.4f}, valid={valid}"
+        )
+
+        return result
+
+    def validate_capital_accumulation(self) -> dict:
+        """
+        Capital Accumulation検証: 投資累積とGDP成長の正の相関
+
+        Returns:
+            {
+                "correlation": float,
+                "p_value": float,
+                "valid": bool (r > 0 and p < 0.05),
+            }
+        """
+        logger.info("Validating Capital Accumulation...")
+
+        investment = np.array(self.history["investment"])
+        gdp = np.array(self.history["gdp"])
+
+        # 累積投資を計算
+        cumulative_investment = np.cumsum(investment)
+
+        # GDP成長率を計算
+        gdp_growth = np.diff(gdp) / gdp[:-1]
+
+        # 累積投資とGDP成長率の相関（最初のステップを除く）
+        if len(cumulative_investment) > len(gdp_growth):
+            cumulative_investment = cumulative_investment[1:]
+
+        # 相関係数とp値を計算
+        correlation, p_value = stats.pearsonr(cumulative_investment, gdp_growth)
+
+        valid = correlation > 0 and p_value < 0.05
+
+        result = {
+            "phenomenon": "Capital Accumulation",
+            "correlation": float(correlation),
+            "p_value": float(p_value),
+            "valid": bool(valid),
+            "expected": "r > 0 (positive correlation)",
+            "description": "Cumulative investment vs GDP growth rate",
+        }
+
+        logger.info(
+            f"Capital Accumulation: r={correlation:.4f}, p={p_value:.4f}, valid={valid}"
+        )
+
+        return result
+
+    def validate_consumption_smoothing(self) -> dict:
+        """
+        Consumption Smoothing検証: 消費の平滑化（消費変動 < 所得変動）
+
+        Returns:
+            {
+                "consumption_cv": float,  # 変動係数
+                "income_cv": float,
+                "valid": bool (consumption_cv < income_cv),
+            }
+        """
+        logger.info("Validating Consumption Smoothing...")
+
+        consumption = np.array(self.history["consumption"])
+
+        # 世帯所得の平均を計算
+        mean_incomes = []
+        for step_incomes in self.history["household_incomes"]:
+            if len(step_incomes) > 0:
+                mean_incomes.append(np.mean(step_incomes))
+            else:
+                mean_incomes.append(0.0)
+        income = np.array(mean_incomes)
+
+        # 変動係数（CV）を計算（標準偏差 / 平均）
+        consumption_mean = np.mean(consumption)
+        consumption_std = np.std(consumption)
+        consumption_cv = (
+            consumption_std / consumption_mean if consumption_mean > 0 else 0.0
+        )
+
+        income_mean = np.mean(income)
+        income_std = np.std(income)
+        income_cv = income_std / income_mean if income_mean > 0 else 0.0
+
+        valid = consumption_cv < income_cv
+
+        result = {
+            "phenomenon": "Consumption Smoothing",
+            "consumption_cv": float(consumption_cv),
+            "income_cv": float(income_cv),
+            "ratio": float(consumption_cv / (income_cv + 1e-9)),
+            "valid": bool(valid),
+            "expected": "CV(Consumption) < CV(Income)",
+            "description": "Household consumption stabilization",
+        }
+
+        logger.info(
+            f"Consumption Smoothing: CV(C)={consumption_cv:.4f}, "
+            f"CV(Y)={income_cv:.4f}, valid={valid}"
+        )
+
+        return result
+
     def validate_all(self) -> dict:
         """
         すべての経済現象を検証
@@ -417,8 +559,11 @@ class EconomicPhenomenaValidator:
                 "engels_law": {...},
                 "investment_volatility": {...},
                 "price_stickiness": {...},
+                "wage_price_spiral": {...},
+                "capital_accumulation": {...},
+                "consumption_smoothing": {...},
                 "summary": {
-                    "total": 7,
+                    "total": 10,
                     "valid": int,
                     "invalid": int,
                 }
@@ -436,21 +581,24 @@ class EconomicPhenomenaValidator:
             "engels_law": self.validate_engels_law(),
             "investment_volatility": self.validate_investment_volatility(),
             "price_stickiness": self.validate_price_stickiness(),
+            "wage_price_spiral": self.validate_wage_price_spiral(),
+            "capital_accumulation": self.validate_capital_accumulation(),
+            "consumption_smoothing": self.validate_consumption_smoothing(),
         }
 
         # サマリーを計算
         valid_count = sum(1 for r in results.values() if r.get("valid", False))
-        invalid_count = 7 - valid_count
+        invalid_count = 10 - valid_count
 
         results["summary"] = {
-            "total": 7,
+            "total": 10,
             "valid": valid_count,
             "invalid": invalid_count,
-            "success_rate": valid_count / 7,
+            "success_rate": valid_count / 10,
         }
 
         logger.info("=" * 60)
-        logger.info(f"Validation Summary: {valid_count}/7 phenomena validated")
+        logger.info(f"Validation Summary: {valid_count}/10 phenomena validated")
         logger.info("=" * 60)
 
         return results

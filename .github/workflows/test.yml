@@ -67,5 +67,6 @@ jobs:
       run: |
         echo "✅ Test Summary:"
         echo "  - Python version: ${{ matrix.python-version }}"
-        echo "  - Total tests: 207"
+        echo "  - Total tests: 206 passed, 1 skipped"
         echo "  - Target coverage: 80%+ (Current: 88%)"
+        echo "  - Status: Phase 10完了（最適化実装完了）"

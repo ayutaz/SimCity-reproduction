@@ -76,6 +76,9 @@ class FirmAgent(BaseAgent):
         self.is_bankrupt = False
         self.negative_cash_months = 0  # 現金がマイナスの月数
 
+        # Phase 8.1: 月次投資額（GDPの投資指標計算用）
+        self.investment = 0.0
+
         # 属性として保存
         self.attributes = {
             "profile_id": profile.id,

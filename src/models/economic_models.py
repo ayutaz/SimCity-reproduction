@@ -374,6 +374,8 @@ class MacroeconomicIndicators:
         """
         Gini係数を計算（所得不平等度）
 
+        NumPy最適化版: ベクトル演算で高速化（Phase 10.5）
+
         Args:
             incomes: 所得のリスト
 
@@ -383,27 +385,24 @@ class MacroeconomicIndicators:
         if not incomes or len(incomes) == 0:
             return 0.0
 
-        # ゼロや負の所得を除外
-        incomes = [max(0, inc) for inc in incomes]
+        # NumPy配列に変換してゼロや負の所得を除外
+        incomes_array = np.maximum(0, np.array(incomes, dtype=np.float64))
 
-        if sum(incomes) == 0:
-            return 0.0
-
-        # ソート
-        sorted_incomes = sorted(incomes)
-        n = len(sorted_incomes)
-
-        # Gini係数の計算
-        cumulative_income = np.cumsum(sorted_incomes)
-        sum_income = cumulative_income[-1]
-
+        sum_income = np.sum(incomes_array)
         if sum_income == 0:
             return 0.0
 
+        # ソート
+        sorted_incomes = np.sort(incomes_array)
+        n = len(sorted_incomes)
+
+        # Gini係数の計算（NumPy最適化版）
         # G = (2 * Σ(i * y_i)) / (n * Σy_i) - (n+1)/n
-        gini = (2 * sum((i + 1) * y for i, y in enumerate(sorted_incomes))) / (
-            n * sum_income
-        ) - (n + 1) / n
+        # インデックス配列 [1, 2, 3, ..., n] を生成
+        indices = np.arange(1, n + 1, dtype=np.float64)
+
+        # ベクトル演算で計算（Python loopを回避）
+        gini = (2 * np.sum(indices * sorted_incomes)) / (n * sum_income) - (n + 1) / n
 
         return max(0.0, min(1.0, gini))
 
@@ -432,6 +431,7 @@ def calculate_effective_labor(
     """
     実効労働量を計算
 
+    NumPy最適化版: ベクトル演算で高速化（Phase 10.5）
     各労働者のスキルと求められるスキルのマッチング度を考慮
 
     Args:
@@ -444,25 +444,32 @@ def calculate_effective_labor(
     if not workers:
         return 0.0
 
-    effective_labor = 0.0
+    if not skill_requirements:
+        # スキル要件がない場合は労働者数として計算
+        return float(len(workers))
 
+    # スキル要件のリストを作成
+    required_skills = list(skill_requirements.keys())
+    required_levels = np.array(
+        [skill_requirements[skill] for skill in required_skills], dtype=np.float64
+    )
+
+    # 各労働者の効率を計算
+    efficiencies = []
     for worker_skills in workers:
-        # 各労働者のスキルマッチング度を計算
-        if not skill_requirements:
-            # スキル要件がない場合は1人として計算
-            efficiency = 1.0
-        else:
-            # スキルマッチング効率
-            efficiencies = []
-            for skill, required_level in skill_requirements.items():
-                actual_level = worker_skills.get(skill, 0.0)
-                # スキルレベルの比率（上限1.0）
-                efficiency = min(1.0, actual_level / max(0.01, required_level))
-                efficiencies.append(efficiency)
+        # 労働者のスキルレベルを抽出
+        actual_levels = np.array(
+            [worker_skills.get(skill, 0.0) for skill in required_skills],
+            dtype=np.float64,
+        )
 
-            # 平均効率
-            efficiency = np.mean(efficiencies) if efficiencies else 0.5
+        # スキルマッチング効率を計算（ベクトル演算）
+        # 各スキルの比率を計算（上限1.0）
+        skill_ratios = np.minimum(1.0, actual_levels / np.maximum(0.01, required_levels))
 
-        effective_labor += efficiency
+        # 平均効率
+        efficiency = np.mean(skill_ratios) if len(skill_ratios) > 0 else 0.5
+        efficiencies.append(efficiency)
 
-    return effective_labor
+    # NumPy配列に変換して合計を計算
+    return float(np.sum(efficiencies))

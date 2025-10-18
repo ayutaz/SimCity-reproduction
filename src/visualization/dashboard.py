@@ -9,20 +9,24 @@ Streamlitダッシュボード:
 - リアルタイムシミュレーション実行
 """
 
-import json
-import time
+# .envファイルから環境変数を読み込み（importの前に実行）
+from dotenv import load_dotenv
 
-import numpy as np
-import pandas as pd
-import streamlit as st
-from loguru import logger
+load_dotenv()
 
-from src.environment.geography import BuildingType, CityMap
-from src.environment.simulation import Simulation
-from src.llm.llm_interface import LLMInterface
-from src.utils.config import load_config
-from src.visualization.map_generator import MapGenerator
-from src.visualization.plots import EconomicPlots
+import json  # noqa: E402
+import time  # noqa: E402
+
+import numpy as np  # noqa: E402
+import pandas as pd  # noqa: E402
+import streamlit as st  # noqa: E402
+from loguru import logger  # noqa: E402
+
+from src.environment.geography import BuildingType, CityMap  # noqa: E402
+from src.environment.simulation import Simulation  # noqa: E402
+from src.utils.config import load_config  # noqa: E402
+from src.visualization.map_generator import MapGenerator  # noqa: E402
+from src.visualization.plots import EconomicPlots  # noqa: E402
 
 
 class SimCityDashboard:
@@ -191,8 +195,8 @@ class SimCityDashboard:
         try:
             st.session_state.sim_state = "running"
 
-            # 設定読み込み
-            config = load_config()
+            # 設定読み込み（デフォルトパスを指定）
+            config = load_config("config/simulation_config.yaml")
 
             # 設定を上書き
             config.agents.households.initial = num_households
@@ -200,13 +204,8 @@ class SimCityDashboard:
             config.agents.firms.initial = num_firms
             config.simulation.random_seed = random_seed
 
-            # LLMインターフェース初期化
-            llm_interface = LLMInterface(
-                api_key=config.llm.api_key, model=config.llm.model
-            )
-
-            # シミュレーション初期化
-            simulation = Simulation(config=config, llm_interface=llm_interface)
+            # シミュレーション初期化（LLMInterfaceは内部で自動初期化される）
+            simulation = Simulation(config)
 
             st.session_state.simulation = simulation
             st.session_state.num_steps = num_steps
@@ -287,7 +286,7 @@ class SimCityDashboard:
                 # シミュレーション完了
                 progress_placeholder.success("✅ Simulation completed!")
                 st.session_state.sim_state = "stopped"
-                st.session_state.sim_history = sim.history
+                st.session_state.sim_history = sim.state.history
 
     def _display_metrics(self):
         """メトリクスを表示"""
@@ -297,13 +296,13 @@ class SimCityDashboard:
 
         # ライブシミュレーションまたはアップロードされた結果からメトリクスを表示
         if sim is not None and st.session_state.data_source == "Live Simulation":
-            history = sim.history
+            history = sim.state.history
 
             if len(history["gdp"]) > 0:
                 # 最新の値を表示
                 latest_gdp = history["gdp"][-1]
                 latest_unemployment = history["unemployment_rate"][-1]
-                latest_inflation = history["inflation_rate"][-1]
+                latest_inflation = history["inflation"][-1]
 
                 # 世帯数
                 num_households = len(sim.households)
@@ -318,8 +317,8 @@ class SimCityDashboard:
                     else 0
                 )
                 inflation_delta = (
-                    latest_inflation - history["inflation_rate"][-2]
-                    if len(history["inflation_rate"]) > 1
+                    latest_inflation - history["inflation"][-2]
+                    if len(history["inflation"]) > 1
                     else 0
                 )
 
@@ -367,7 +366,8 @@ class SimCityDashboard:
             if len(history.get("gdp", [])) > 0:
                 latest_gdp = history["gdp"][-1]
                 latest_unemployment = history["unemployment_rate"][-1]
-                latest_inflation = history["inflation_rate"][-1]
+                # 新旧両方のキー名に対応
+                latest_inflation = history.get("inflation", history.get("inflation_rate", [0]))[-1] if history.get("inflation") or history.get("inflation_rate") else 0
 
                 with col1:
                     st.metric("GDP", f"${latest_gdp:,.0f}")
@@ -574,14 +574,14 @@ class SimCityDashboard:
             st.session_state.data_source == "Live Simulation"
             and st.session_state.simulation is not None
         ):
-            history = st.session_state.simulation.history
+            history = st.session_state.simulation.state.history
 
             if len(history["gdp"]) > 0:
                 return {
                     "GDP": history["gdp"],
                     "Unemployment Rate": history["unemployment_rate"],
-                    "Inflation Rate": history["inflation_rate"],
-                    "Gini Coefficient": history["gini_coefficient"],
+                    "Inflation Rate": history["inflation"],
+                    "Gini Coefficient": history["gini"],
                 }
             else:
                 return None
@@ -596,9 +596,15 @@ class SimCityDashboard:
                     result["GDP"] = history["gdp"]
                 if "unemployment_rate" in history:
                     result["Unemployment Rate"] = history["unemployment_rate"]
-                if "inflation_rate" in history:
+                # 新旧両方のキー名に対応
+                if "inflation" in history:
+                    result["Inflation Rate"] = history["inflation"]
+                elif "inflation_rate" in history:
                     result["Inflation Rate"] = history["inflation_rate"]
-                if "gini_coefficient" in history:
+                # 新旧両方のキー名に対応
+                if "gini" in history:
+                    result["Gini Coefficient"] = history["gini"]
+                elif "gini_coefficient" in history:
                     result["Gini Coefficient"] = history["gini_coefficient"]
                 return result
             else:
