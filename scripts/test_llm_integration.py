@@ -8,23 +8,22 @@ import os
 import sys
 from pathlib import Path
 
+from dotenv import load_dotenv
+from loguru import logger
+
 # プロジェクトルートをパスに追加
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-# .envファイルを読み込み
-from dotenv import load_dotenv
-
-load_dotenv()
-
-from loguru import logger
-
-from src.environment.simulation import Simulation
-from src.utils.config import load_config
+from src.environment.simulation import Simulation  # noqa: E402
+from src.utils.config import load_config  # noqa: E402
 
 
 def main():
     """LLM統合テストを実行"""
+    # .envファイルを読み込み
+    load_dotenv()
+
     logger.info("=== LLM Integration Test ===")
 
     # 環境変数チェック
