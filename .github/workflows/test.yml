@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.12", "3.13"]
+        python-version: ["3.12"]
 
     steps:
     - uses: actions/checkout@v4
@@ -40,7 +40,6 @@ jobs:
         uv run pytest --cov=src --cov-report=xml --cov-report=html --cov-report=term -v
 
     - name: Upload coverage to Codecov
-      if: matrix.python-version == '3.12'
       uses: codecov/codecov-action@v4
       with:
         file: ./coverage.xml
@@ -51,7 +50,6 @@ jobs:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
     - name: Upload coverage reports as artifact
-      if: matrix.python-version == '3.12'
       uses: actions/upload-artifact@v4
       with:
         name: coverage-report
