@@ -106,6 +106,9 @@ class Simulation:
         # 前期の価格指数（インフレ率計算用）
         self.prev_price_index = None
 
+        # 問題4修正: 指標計算のキャッシュ（ログ重複解消）
+        self._cached_indicators = None
+
         logger.info("State initialized")
 
     def _initialize_agents(self):
@@ -323,6 +326,9 @@ class Simulation:
         # ステップカウンタ更新
         self.state.step += 1
 
+        # 問題4修正: キャッシュをクリア（次のステップのため）
+        self._cached_indicators = None
+
         logger.info(f"Step {self.state.step - 1} completed")
         logger.info(
             f"Indicators: GDP={indicators['gdp']:.2f}, "
@@ -509,20 +515,27 @@ class Simulation:
                 household.pending_consumption_decision = None
 
             else:
-                # フォールバック: LLM決定がない場合はランダム選択
+                # 問題2修正: フォールバック時に複数財（3-5種）をランダム選択し、予算を分散
                 if listings:
-                    target_listing = random.choice(listings)
-                    affordable_qty = budget / target_listing.price
-                    order_qty = min(affordable_qty, target_listing.quantity)
+                    # ランダムに3-5種類の財を選択（出品数が少ない場合は全て選択）
+                    num_goods = min(random.randint(3, 5), len(listings))
+                    selected_listings = random.sample(listings, k=num_goods)
 
-                    if order_qty > 0:
-                        order = GoodOrder(
-                            household_id=household.profile.id,
-                            good_id=target_listing.good_id,
-                            quantity=order_qty,
-                            max_price=target_listing.price * 1.2,
-                        )
-                        orders.append(order)
+                    # 予算を財数で均等分配
+                    budget_per_good = budget / num_goods
+
+                    for target_listing in selected_listings:
+                        affordable_qty = budget_per_good / target_listing.price
+                        order_qty = min(affordable_qty, target_listing.quantity)
+
+                        if order_qty > 0:
+                            order = GoodOrder(
+                                household_id=household.profile.id,
+                                good_id=target_listing.good_id,
+                                quantity=order_qty,
+                                max_price=target_listing.price * 1.2,
+                            )
+                            orders.append(order)
 
         # 3. 市場マッチング
         transactions = self.goods_market.match(listings, orders)
@@ -701,6 +714,10 @@ class Simulation:
         """
         logger.info("Revision Stage: LLM-based decision making")
 
+        # 問題4修正: 指標を1回だけ計算してキャッシュ（ログ重複解消）
+        self._cached_indicators = self._calculate_indicators(update_prev_price_index=False)
+        logger.debug(f"Cached indicators for {len(self.households) + len(self.firms) + 2} agents")
+
         # 1. 世帯エージェントの意思決定（全世帯）
         logger.debug(f"Processing {len(self.households)} household decisions...")
         for _i, household in enumerate(self.households):
@@ -828,8 +845,9 @@ class Simulation:
                 f"Labor market: No matching ({len(job_postings)} postings, {len(job_seekers)} seekers)"
             )
 
-        # Phase 8.2: 離職メカニズム（月次離職率による自発的離職）
+        # Phase 8.2 + Phase C-1: 離職メカニズム（確率的Bernoulli trial方式）
         turnover_rate = getattr(self.config.markets.labor, "turnover_rate", 0.05)
+
         if turnover_rate > 0:
             # 全雇用者をリストアップ
             employed_households = [
@@ -839,12 +857,14 @@ class Simulation:
             ]
 
             if employed_households:
-                # 離職者数を計算（確率的）
-                num_quits = int(len(employed_households) * turnover_rate)
-                if num_quits > 0:
-                    # ランダムに離職者を選択
-                    quitters = random.sample(employed_households, k=num_quits)
+                # Phase C-1: 各雇用者を個別に確率判定（Bernoulli trial）
+                # これにより雇用者数が少なくても離職が発生する
+                quitters = []
+                for household in employed_households:
+                    if random.random() < turnover_rate:
+                        quitters.append(household)
 
+                if quitters:
                     for household in quitters:
                         # 雇用主から削除
                         employer_id = household.profile.employer_id
@@ -863,8 +883,13 @@ class Simulation:
                         household.profile.wage = 0.0
 
                     logger.info(
-                        f"Phase 8.2 Turnover: {num_quits} employees voluntarily quit "
-                        f"({turnover_rate * 100:.1f}% turnover rate)"
+                        f"Phase C-1 Turnover: {len(quitters)} employees quit "
+                        f"({len(employed_households)} employed, rate={turnover_rate * 100:.1f}%)"
+                    )
+                else:
+                    logger.debug(
+                        f"Phase C-1 Turnover: No quits this step "
+                        f"({len(employed_households)} employed, rate={turnover_rate * 100:.1f}%)"
                     )
 
         # 6. 金融市場統合
@@ -974,8 +999,8 @@ class Simulation:
             f.profile.wage_offered for f in self.firms if f.profile.job_openings > 0
         ) / max(1, sum(1 for f in self.firms if f.profile.job_openings > 0))
 
-        # マクロ経済指標（prev_price_indexを更新しない）
-        current_indicators = self._calculate_indicators(update_prev_price_index=False)
+        # 問題4修正: キャッシュされた指標を使用（ログ重複解消）
+        current_indicators = self._cached_indicators if self._cached_indicators else self._calculate_indicators(update_prev_price_index=False)
 
         observation = {
             "current_step": self.state.step,
@@ -1046,8 +1071,8 @@ class Simulation:
             else 2000.0
         )
 
-        # マクロ経済指標（prev_price_indexを更新しない）
-        current_indicators = self._calculate_indicators(update_prev_price_index=False)
+        # 問題4修正: キャッシュされた指標を使用（ログ重複解消）
+        current_indicators = self._cached_indicators if self._cached_indicators else self._calculate_indicators(update_prev_price_index=False)
 
         observation = {
             "current_step": self.state.step,
@@ -1088,8 +1113,8 @@ class Simulation:
         Returns:
             観察情報の辞書
         """
-        # マクロ経済指標（すべて、prev_price_indexを更新しない）
-        current_indicators = self._calculate_indicators(update_prev_price_index=False)
+        # 問題4修正: キャッシュされた指標を使用（ログ重複解消）
+        current_indicators = self._cached_indicators if self._cached_indicators else self._calculate_indicators(update_prev_price_index=False)
 
         # 税収・支出・準備金
         budget_balance = (
@@ -1141,8 +1166,8 @@ class Simulation:
         Returns:
             観察情報の辞書
         """
-        # マクロ経済指標（prev_price_indexを更新しない）
-        current_indicators = self._calculate_indicators(update_prev_price_index=False)
+        # 問題4修正: キャッシュされた指標を使用（ログ重複解消）
+        current_indicators = self._cached_indicators if self._cached_indicators else self._calculate_indicators(update_prev_price_index=False)
 
         # 潜在GDP（簡略版: 過去平均の1.02倍）
         if len(self.state.history["gdp"]) >= 3:
@@ -1311,18 +1336,18 @@ class Simulation:
             firm_demand = market_demands.get(firm.profile.goods_type, 0.0)
 
             # Phase 8.3: より敏感で段階的な価格調整メカニズム
-            # 在庫過剰レベルに応じた価格調整
+            # 問題5修正: 在庫過剰レベルに応じた価格調整（範囲を90-110%に制限）
             if inventory_sales_ratio > 3.0:
-                # 極度の在庫過剰 → 大幅値下げ（20%）
-                price_adjustment = 0.80
+                # 極度の在庫過剰 → 値下げ（10%）
+                price_adjustment = 0.90
                 logger.debug(
-                    f"Firm {firm.profile.id}: Severe inventory excess (ratio={inventory_sales_ratio:.2f}), lowering price by 20%"
+                    f"Firm {firm.profile.id}: Severe inventory excess (ratio={inventory_sales_ratio:.2f}), lowering price by 10%"
                 )
             elif inventory_sales_ratio > 1.5:
-                # 在庫過剰 → 中程度の値下げ（15%）
-                price_adjustment = 0.85
+                # 在庫過剰 → 値下げ（10%）
+                price_adjustment = 0.90
                 logger.debug(
-                    f"Firm {firm.profile.id}: Inventory excess (ratio={inventory_sales_ratio:.2f}), lowering price by 15%"
+                    f"Firm {firm.profile.id}: Inventory excess (ratio={inventory_sales_ratio:.2f}), lowering price by 10%"
                 )
             elif inventory_sales_ratio > 1.0:
                 # 軽度の在庫過剰 → 小幅値下げ（8%）
@@ -1330,18 +1355,18 @@ class Simulation:
                 logger.debug(
                     f"Firm {firm.profile.id}: Slight inventory excess (ratio={inventory_sales_ratio:.2f}), lowering price by 8%"
                 )
-            # 在庫不足レベルに応じた価格調整
+            # 在庫不足レベルに応じた価格調整（問題5修正: 10%以内に制限）
             elif inventory_sales_ratio < 0.3 and firm.profile.inventory < 10.0:
-                # 極度の在庫不足 → 大幅値上げ（20%）
-                price_adjustment = 1.20
+                # 極度の在庫不足 → 値上げ（10%）
+                price_adjustment = 1.10
                 logger.debug(
-                    f"Firm {firm.profile.id}: Severe inventory shortage (ratio={inventory_sales_ratio:.2f}), raising price by 20%"
+                    f"Firm {firm.profile.id}: Severe inventory shortage (ratio={inventory_sales_ratio:.2f}), raising price by 10%"
                 )
             elif inventory_sales_ratio < 0.6 and firm.profile.inventory < 20.0:
-                # 在庫不足 → 中程度の値上げ（15%）
-                price_adjustment = 1.15
+                # 在庫不足 → 値上げ（10%）
+                price_adjustment = 1.10
                 logger.debug(
-                    f"Firm {firm.profile.id}: Inventory shortage (ratio={inventory_sales_ratio:.2f}), raising price by 15%"
+                    f"Firm {firm.profile.id}: Inventory shortage (ratio={inventory_sales_ratio:.2f}), raising price by 10%"
                 )
             elif inventory_sales_ratio < 0.8:
                 # 軽度の在庫不足 → 小幅値上げ（8%）
@@ -1371,9 +1396,9 @@ class Simulation:
 
             price = price * price_adjustment
 
-            # Phase 8.3: 価格制約を緩和（最低30.0、最高300.0）
-            # より広い価格変動を許容して、価格メカニズムが機能しやすくする
-            price = max(30.0, min(300.0, price))
+            # 問題5修正: 価格制約を強化（最低40.0、最高200.0）
+            # 過度な価格変動を防ぎ、市場の安定性を向上させる
+            price = max(40.0, min(200.0, price))
 
             firm.profile.production_quantity = actual_production
             firm.profile.price = price
@@ -1453,7 +1478,7 @@ class Simulation:
             action = arguments.get("action")
             amount = arguments.get("amount", 0.0)
 
-            # Phase 1.3: 利益ベースの投資メカニズム強化
+            # Phase 1.3 + Phase B-1: 利益ベースの投資メカニズム強化（赤字時も維持投資）
             # 月次利益を計算（売上 - 賃金コスト）
             revenue = firm.profile.sales_quantity * firm.profile.price
             num_employees = len(firm.profile.employees)
@@ -1488,6 +1513,19 @@ class Simulation:
                             f"Firm {firm.profile.id} auto-invested ${auto_investment:.2f} "
                             f"(maintenance, profit: ${monthly_profit:.2f})"
                         )
+            else:
+                # Phase B-1: 赤字でも最低限の維持投資を実行（資本の2%）
+                maintenance_investment = firm.profile.capital * 0.02
+                # 現金が維持投資額の3倍以上ある場合のみ実行（安全マージン）
+                if firm.profile.cash >= maintenance_investment * 3:
+                    firm.profile.cash -= maintenance_investment
+                    firm.profile.capital += maintenance_investment
+                    firm.investment = maintenance_investment
+                    # Phase C-2: DEBUGからINFOに変更して可視化
+                    logger.info(
+                        f"Phase C-2 Maintenance: Firm {firm.profile.id} invested ${maintenance_investment:.2f} "
+                        f"(loss=${monthly_profit:.2f}, cash=${firm.profile.cash:.2f})"
+                    )
 
             # 既存の投資ロジック
             if action == "borrow":
